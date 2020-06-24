@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./echarts.min.js"></script>
+    <script src="./echarts-gl.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.css' rel='stylesheet' />
+    <!-- <script src="https://cdn.jsdelivr.net/npm/echarts@4.8.0/dist/echarts.min.js"></script> -->
+    
+</head>
+
+<body>
+    <div id='map' style="height: 400px;width: 400px;"></div>
+    <script type="text/javascript">
+        window.onLoad = function () {
+            mapboxgl.accessToken ='pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tiaDdzbHA0MDJzbjJ5bHM0c2NpbjM4aSJ9.NkU21q7-8zIGmPvo8gqRZA';
+            var chart = echarts.init(document.getElementById('map'));
+            chart.setOption({
+                mapbox: {
+               
+                style: 'mapbox://styles/mapbox/dark-v10'
+            }
+        });
+          
+        }
+       
+    </script>
+</body>
+
+</html>

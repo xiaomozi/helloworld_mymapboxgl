@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <!-- <script src="echarts.min.js"></script>
+     -->
+     <script src="./echarts.min.js"></script>
+    <script src="http://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.js"></script>
+    
+	<!-- <script src="geoJson.js"></script> -->
+	<script src="xihuGeoJson.js"></script>
+	
+	<!-- <script src='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.js'></script> -->
+<link href='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.css' rel='stylesheet' />
+<script src="http://map.zjditu.cn/vmap/static/mapbox-gl.js"></script>
+ 
+    <style type="text/css">
+    #main,body,html {
+        width:100%;
+        /*border:2px solid green;*/
+        height: 100%;
+    }
+</style>
+ 
+</head>
+ 
+<body>
+    <div id="main"></div>
+    <script type="text/javascript">
+	mapboxgl.accessToken = 'pk.eyJ1IjoiZG9uZ2hhb3JhbiIsImEiOiJjandhZm9xNjcwMnZtNGJwYXkybzVhdG85In0.8DJQHNvOZusu1SoRXAyhxg';
+    var mapboxgl_style = 'http://map.zjditu.cn/vtiles/styles/tdt/dark.json';
+    var mapboxgl_center = [120.07507324218751,30.172233581542972];
+	var city=[{name:'北山街道',value:[120.154838003,30.258482691,1000,1]},
+			{name:'西溪街道',value:[120.144639266,30.284229016,1000,4]},
+			{name:'翠苑街道',value:[120.11448985,30.27882795,1000,5]},
+			{name:'古荡街道',value:[120.109018946,30.267039801,1000,6]},
+			{name:'西湖街道',value:[120.112460758,30.245933384,1000,12]},
+			{name:'留下街道',value:[120.097317827,30.251029793,1000,7]},
+			{name:'转塘街道',value:[120.071572043,30.203773692,1000,8]},
+			{name:'蒋村街道',value:[120.058503755,30.302117763,1000,9]},
+			{name:'灵隐街道',value:[120.124163036,30.244626798,1000,0]},
+			{name:'文新街道',value:[120.103150815,30.276086614,1000,11]},
+			{name:'三墩镇',value:[120.097619169,30.300190135,1000,13]},
+			{name:'双浦镇',value:[120.136229388,30.100187806,1000,14]}]
+		
+	var maxSize4Pin = 100, minSize4Pin = 20;
+	
+    var regionsData = geojson.features.map(function(feature) {
+        return {
+            name: feature.properties.name,
+            value: parseFloat(feature.properties.center.split(',')[1].slice(0,11)),
+            height: feature.properties.height||700,
+            //coords: feature.geometry.coordinates,
+			itemStyle: {
+				opacity: 1,
+				borderWidth: 2,
+				borderColor: "#a7e4e6", //省市边界线
+				color:feature.properties.color
+			}
+        };
+    });
+	echarts.registerMap('buildings', geojson);
+	var chart = echarts.init(document.getElementById('main'));
+	var min=0,max=300;
+	var option = {
+		mapbox: {
+			center: mapboxgl_center,
+			zoom: 11,
+			pitch: 50,
+			bearing: -10,
+			style: mapboxgl_style,
+			shading: 'realistic',
+			light: {
+				main: {
+					intensity: 0.5,
+					shadow: false,
+					//alpha: 10,
+					//beta: -10
+				},
+				ambient: {
+					intensity: 0.2
+				},
+				ambientCubemap: {
+					//texture: './img_mapbox/sunlight.hdr',
+					exposure: 1,
+					diffuseIntensity: 0.5,
+					specularIntensity: 2
+				}
+			},
+			zlevel: 1
+		},
+		tooltip:{
+			formatter:function(params){
+			console.log(params.seriesName);
+				params
+				var res='<div><p>区县：'+params.name +'</p></div>' ;
+					res+='<p>'+'值'+':'+params.value+'</p>';
+				 return res;
+			},
+		},
+		//backgroundColor:'#00bcd459',
+		visualMap: {
+			show: false,
+			min: 30.1,
+			max: 30.5,
+			inRange: {
+			   color: ['#0066ff', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+			}
+		},
+		series: [{
+			name:'buildings',
+			type: 'map3D',
+			coordinateSystem: 'mapbox',
+			map: 'buildings',
+			data:regionsData,
+			shading: 'lambert',
+			regionHeight: 8,
+			label: {
+				show: true,
+				textStyle: {
+					color: '#fff', //地图初始化区域字体颜色
+					fontSize: 12,
+					opacity: 1,
+					backgroundColor: 'rgba(0,0,0,0.4)'
+					//backgroundColor: 'rgba(53,171,199,0)'
+				},
+			},
+			itemStyle: {
+				opacity: 0.5,
+				borderWidth: 2,
+				borderColor: "#a7e4e6", //省市边界线
+			}
+		},
+        {
+            name: '点',
+            type: 'scatter3D',
+            coordinateSystem: 'mapbox',
+            symbol: 'pin',
+            symbolSize: 30,
+			<!-- function (val) { -->
+                <!-- var a = (maxSize4Pin - minSize4Pin) / (max - min); -->
+                <!-- var b = minSize4Pin - a*min; -->
+                <!-- b = maxSize4Pin - a*max; -->
+                <!-- return a*val[2]+b; -->
+            <!-- }, -->
+            
+            label: {
+				formatter: function (params) {
+                    var ret = params.value[3];
+					console.log(ret);
+                    return ret;
+                },
+				position:'top',//
+				distance:-10,
+				show: true,
+				textStyle: {
+					color: '#fff',
+					fontSize: 9,
+				}
+                
+            },
+            itemStyle: {
+                normal: {
+                    color: '#F62157', //标志颜色
+                }
+            },
+            zlevel: 10,
+            data: city,
+        }]
+	}
+	chart.setOption(option);
+	chart.on('click', function (params) {
+		var cout=params.data.name;
+ 
+		//window.open('https://www.baidu.com');
+		console.log(params);
+	});
+	</script>
+</body>
+</html>

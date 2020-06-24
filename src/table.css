@@ -1,0 +1,21 @@
+.table{
+    position: absolute;
+    
+    /* height: ; */
+    /* max-height:70%; */
+    /* min-height: 30%; */
+    width: 10%;
+    background-color:darkkhaki;
+    border:  1px solid #F00;
+    border-radius: 1em;
+    top:1em;
+    left:0.5em;
+    border-spacing: 1em;
+    /* z-index: -1; */
+}
+.table tr td:last-child{
+    text-align: left;
+    /* border:darkblue; */
+    border-left:  1px dashed rgb(57, 107, 122);
+
+}
