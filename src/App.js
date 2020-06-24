@@ -135,7 +135,7 @@ class App extends React.Component {
 
         </div>
         <TableContainer tableshow={this.state.tableshow} featuredata={this.state.featuredata} />
-        <canvas id="deck-canvas" className = "trcl"></canvas>
+        <canvas id="deck-canvas" className="trcl"></canvas>
 
       </div>
 
@@ -155,7 +155,7 @@ class App extends React.Component {
       longitude: 30,
       zoom: 4,
       bearing: 0,
-      pitch: 30
+      pitch: 45
     };
 
 
@@ -181,6 +181,7 @@ class App extends React.Component {
       bearing: INITIAL_VIEW_STATE.bearing,
       pitch: INITIAL_VIEW_STATE.pitch
     });
+
 
     //  const deck = new Deck({
     //   canvas: 'deck-canvas',
@@ -274,7 +275,7 @@ class App extends React.Component {
     // map.addControl(new CompassControl(), 'top-right');
     map.addControl(new mapboxgl.NavigationControl());
     // map.addControl(new ZoomControl(), 'top-right');
-    // map.addControl(new InspectControl(), 'bottom-right');
+    map.addControl(new InspectControl(), 'bottom-right');
     // map.addControl(new TooltipControl({ layer: '$fill' }));
     var scale = new mapboxgl.ScaleControl({
       maxWidth: 80,
@@ -487,8 +488,30 @@ class App extends React.Component {
 
     }
 
-    map.on('load', function () {
 
+
+    map.on('load', function () {
+      // console.log(map.getStyle().layers)
+      // console.log(map.getStyle().sources);//mapbox://mapbox.mapbox-streets-v8
+      map.addSource("dems", {
+        "type": "raster-dem",
+        "url": "mapbox://mapbox.terrain-rgb"
+
+      })
+
+      map.addLayer({
+        'id': "dem",
+        "source": "dems",
+        'type': 'hillshade',
+        'paint': {
+          'hillshade-highlight-color': 'cyan',
+          // 'hillshade-accent-color':'blue',
+          'hillshade-shadow-color':'olive',
+          'hillshade-illumination-direction':90,
+          'hillshade-illumination-anchor':'map'
+        }
+
+      })
 
       var size = 200;
 
@@ -567,7 +590,7 @@ class App extends React.Component {
     });
 
     function ODFly(ods) {
-      let ODs =ods ? ods : [];
+      let ODs = ods ? ods : [];
       ODs.push([[112.0, 22.0], [115.34, 40.04]])
       ODs.push([[113.0, 22.0], [115.34, 40.04]])
       ODs.push([[115.0, 22.0], [115.34, 40.04]])
@@ -731,8 +754,8 @@ class App extends React.Component {
         'type': 'line',
         'paint': {
           'line-width': 1.5,
-          'line-color':'blue',
-          'line-blur':1
+          'line-color': 'blue',
+          'line-blur': 1
         }
       });
 
