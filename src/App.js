@@ -28,10 +28,10 @@ import Toolbar from './ToolBar';
 
 import Minimap from './plugins/mapboxgl-minimapControl';
 
-import MapboxDraw from 'mapbox-gl-draw';
-import 'mapbox-gl-draw/dist/mapbox-gl-draw.css'
+// import MapboxDraw from 'mapbox-gl-draw';
+// import 'mapbox-gl-draw/dist/mapbox-gl-draw.css'
 import turf from 'turf';
-import './DrawControInfo.css';
+// import './DrawControInfo.css';
 
 //echarts
 // import echart from 'echarts';
@@ -51,56 +51,6 @@ import air from './ne_10m_airports.json'
 import Tools from './Tools';
 // mapboxgl.accessToken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tiaDdzbHA0MDJzbjJ5bHM0c2NpbjM4aSJ9.NkU21q7-8zIGmPvo8gqRZA';
 
-
-// function addecharts(data) {
-//   // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
-
-
-//   var myChart = echarts.init(document.getElementById('map'));
-//   myChart.setOption({
-//     mapbox3D: {
-//       center: [104.114129, 37.550339],
-//       zoom: 2,
-//       pitch: 50,
-//       bearing: -10,
-//       style: 'mapbox://styles/mapbox/light-v9',
-//       boxHeight: 50,
-//       // altitudeScale: 1e2,
-//       postEffect: {
-//         enable: true,
-//         screenSpaceAmbientOcclusion: {
-//           enable: true,
-//           radius: 2
-//         }
-//       },
-//       light: {
-//         main: {
-//           intensity: 2,
-//           shadow: true,
-//           shadowQuality: 'high'
-//         },
-//         ambient: {
-//           intensity: 0.3
-//         }
-//       }
-
-//     },
-//     series: [{
-//       type: 'bar3D',
-//       coordinateSystem: 'mapbox3D',
-//       shading: 'lambert',
-//       minHeight: 0.1,
-//       barSize: 0.1,
-//       data: data,
-//       silent: true,
-//       animationEasingUpdate: 2000
-//     }]
-
-
-//   });
-
-
-// }
 
 function DrawCrtl(props) {
 
@@ -197,7 +147,6 @@ class App extends React.Component {
     // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
     mapboxgl.accessToken = mytoken;
     const app = {};
-    app.me = this;
     const map = new mapboxgl.Map({
       container: "map",
       style: style.mymap, // stylesheet location
@@ -211,7 +160,8 @@ class App extends React.Component {
       bearing: INITIAL_VIEW_STATE.bearing,
       pitch: INITIAL_VIEW_STATE.pitch
     });
-    app.map = map;
+    
+    map.vRApp =this;
 
 
     const geocoder = new MapboxGeocoder({
@@ -282,6 +232,9 @@ class App extends React.Component {
     map.on('load', () => {
      
       tool.addTool("筑", Tools.addBuilding);
+      tool.addTool("量",Tools.drawControl);
+      // tool.addTool("省",Tools.addProvince);
+
 
     })
     // const tool = new Toolbar();
@@ -304,20 +257,19 @@ class App extends React.Component {
       }
     });
 
-    // tool.addTool('量', (e) => {
-    //   draw();
-    // })
+   
 
     // tool.addTool("动", (e) => {
     //   moveSin()
     // })
 
-    // tool.addTool("省", (e) => {
-    //   var me = this;
-    //   addProvince(me)
-    // })
+    tool.addTool("省", (e) => {
+      var me = this;
+      debugger;
+      addProvince1(me)
+    })
 
-    // tool.addTool("筑", addBuilding);
+    
 
     // tool.addTool("聚", (e) => {
     //   cluster();
@@ -361,7 +313,7 @@ class App extends React.Component {
     map.addControl(msgbox, 'top-right');
 
     function updateMapTitle(newtitle) {
-      app.me.setState({
+      this.setState({
         mapTitle: newtitle ? newtitle : "地图"
       })
     }
@@ -386,166 +338,7 @@ class App extends React.Component {
 
     }
 
-    function moveSin() {
-
-      if (app.animation) {
-        cancelAnimationFrame(app.animation);
-        map.removeLayer("line-animation").removeSource("line");
-        app.animation = undefined;
-        return;
-      }
-      var geojson = {
-        'type': 'FeatureCollection',
-        'features': [
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [[0, 0]]
-            }
-          }
-        ]
-      };
-
-      var speedFactor = 30; // number of frames per longitude degree
-      // var animation; // to store and cancel the animation
-      var startTime = 0;
-      var progress = 0; // progress = timestamp - startTime
-      var resetTime = false;
-      map.addSource('line', {
-        'type': 'geojson',
-        'data': geojson
-      });
-      map.addLayer({
-        'id': 'line-animation',
-        'type': 'line',
-        'source': 'line',
-        'layout': {
-          'line-cap': 'round',
-          'line-join': 'round'
-        },
-        'paint': {
-          'line-color': '#ed6498',
-          'line-width': 5,
-          'line-opacity': 0.8
-        }
-      });
-      startTime = performance.now();
-      animateLine();
-      function animateLine(timestamp) {
-        if (resetTime) {
-          // resume previous progress
-          startTime = performance.now() - progress;
-          resetTime = false;
-        } else {
-          progress = timestamp - startTime;
-        }
-
-        // restart if it finishes a loop
-        if (progress > speedFactor * 360) {
-          startTime = timestamp;
-          geojson.features[0].geometry.coordinates = [];
-        } else {
-          var x = progress / speedFactor;
-          // draw a sine wave with some math.
-          var y = Math.sin((x * Math.PI) / 90) * 40;
-          // append new coordinates to the lineString
-          geojson.features[0].geometry.coordinates.push([x, y]);
-          // then update the map
-          map.getSource('line').setData(geojson);
-        }
-        // Request the next frame of the animation.
-        app.animation = requestAnimationFrame(animateLine);
-      }
-    }
-
-    function hideDrawBox() {
-      let box = document.getElementById("calculation-box");
-      box.setAttribute("style", "visibility:hidden")
-      // box.style.visibility = "hidden";
-    }
-    function showDrawBox() {
-      let box = document.getElementById("calculation-box");
-      box.style.visibility = "visible";
-    }
-    function draw() {
-      // console.log(turf)
-      if (app.draw) {
-        map.removeControl(app.draw);
-        hideDrawBox();
-        app.draw = undefined;
-        return;
-      } else {
-        var draw = new MapboxDraw({
-          displayControlsDefault: true,
-          // controls: {
-          // polygon: true,
-          // trash: true
-          // }
-        });
-        map.addControl(draw);
-        showDrawBox()
-        app.draw = draw;
-
-        map.on('draw.create', updateArea);
-        map.on('draw.delete', updateArea);
-        map.on('draw.update', updateArea);
-
-      }
-
-      function updateArea(e) {
-
-        var data = draw.getAll();
-        var answer = document.getElementById('calculated-area');
-        var result;
-        if (data.features.length > 0) {
-          let lastFeature = data.features.pop();
-
-          switch (lastFeature.geometry.type) {
-            case "LineString":
-              result = turf.lineDistance(lastFeature);
-              // result = calculateLength(json);
-              answer.innerHTML =
-                '<p><strong>' +
-                result.toFixed(2) +
-                '</strong></p><p>千米</p>';
-              break;
-            case "Polygon":
-              let json = {}
-              json.features = [];
-              json.type = "FeatureCollection";
-              json.features.push(lastFeature);
-              result = turf.area(json);
-              // var area = turf.area(data);
-              // restrict to area to 2 decimal points
-              var rounded_area = Math.round(result * 100) / 100;
-              answer.innerHTML =
-                '<p><strong>' +
-                rounded_area +
-                '</strong></p><p>平方米</p>';
-              break;
-            case "Point":
-              result = lastFeature.geometry.coordinates;
-              answer.innerHTML = "lng: " + result[0].toFixed(2) + ";<br> lat:" + result[1].toFixed(2);
-
-              break;
-            default:
-              break;
-
-          }
-
-        } else {
-          answer.innerHTML = '';
-          if (e.type !== 'draw.delete')
-            alert('Use the draw tools to draw a polygon!');
-        }
-      }
-
-
-    }
-
-
-
+    
     map.on('load', function () {
       // map.addLayer(myDeckLayer,'waterway-label');
       // map.addLayer(hexagonLayer,'waterway-label');
@@ -1161,7 +954,7 @@ class App extends React.Component {
     }
 
 
-    function addProvince(me) {
+    function addProvince1(me) {
       const provinceid = "province";
 
       if (map.getLayer("province")) {
