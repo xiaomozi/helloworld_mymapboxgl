@@ -1,14 +1,15 @@
 import React from 'react';
 // import logo from './logo.svg';
 
-
-import { Deck } from '@deck.gl/core';
-import { GeoJsonLayer, ArcLayer } from '@deck.gl/layers';
-
-import earthquakedata from './earthquakes.json';
-import './App.css';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css'
+// import { Deck } from '@deck.gl/core';
+// import { GeoJsonLayer, ArcLayer } from '@deck.gl/layers';
+import myDeckLayer, { hexagonLayer, arcsLayer } from './plugins/myDeckLayer';
+
+import earthquakedata from './data/earthquakes.json';
+import './App.css';
+
 import './main.css';
 import 'mapbox-gl-controls/theme.css'
 import RulerControl from 'mapbox-gl-controls/lib/ruler';
@@ -18,75 +19,88 @@ import ZoomControl from 'mapbox-gl-controls/lib/zoom';
 import InspectControl from 'mapbox-gl-controls/lib/inspect';
 import TooltipControl from 'mapbox-gl-controls/lib/tooltip';
 
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+
+
 import MsgBox from './MsgBox';
 import Toolbar from './ToolBar';
+
+import Minimap from './plugins/mapboxgl-minimapControl';
 
 import MapboxDraw from 'mapbox-gl-draw';
 import 'mapbox-gl-draw/dist/mapbox-gl-draw.css'
 import turf from 'turf';
 import './DrawControInfo.css';
-import echarts from 'echarts';
 
-import 'echarts-gl';
+//echarts
+// import echart from 'echarts';
+// import 'echarts-gl';
 // import '../node_modules/echarts-gl/dist/echarts-gl'
-import data from './buslines.json';
+// import data from './buslines.json';
+// require('echarts');
+// import 'echarts';
+// import EchartsLayer from './plugins/EchartsLayer';
+// import flights from './data/flights.json'
 
+
+//table react plugin
 import Reactable from 'reactable';
 import './table.css'
 import air from './ne_10m_airports.json'
-
+import Tools from './Tools';
 // mapboxgl.accessToken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tiaDdzbHA0MDJzbjJ5bHM0c2NpbjM4aSJ9.NkU21q7-8zIGmPvo8gqRZA';
 
 
-function addecharts(data) {
-  // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
+// function addecharts(data) {
+//   // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
 
 
-  var myChart = echarts.init(document.getElementById('map'));
-  myChart.setOption({
-    mapbox3D: {
-      center: [104.114129, 37.550339],
-      zoom: 2,
-      pitch: 50,
-      bearing: -10,
-      style: 'mapbox://styles/mapbox/light-v9',
-      boxHeight: 50,
-      // altitudeScale: 1e2,
-      postEffect: {
-        enable: true,
-        screenSpaceAmbientOcclusion: {
-          enable: true,
-          radius: 2
-        }
-      },
-      light: {
-        main: {
-          intensity: 2,
-          shadow: true,
-          shadowQuality: 'high'
-        },
-        ambient: {
-          intensity: 0.3
-        }
-      }
+//   var myChart = echarts.init(document.getElementById('map'));
+//   myChart.setOption({
+//     mapbox3D: {
+//       center: [104.114129, 37.550339],
+//       zoom: 2,
+//       pitch: 50,
+//       bearing: -10,
+//       style: 'mapbox://styles/mapbox/light-v9',
+//       boxHeight: 50,
+//       // altitudeScale: 1e2,
+//       postEffect: {
+//         enable: true,
+//         screenSpaceAmbientOcclusion: {
+//           enable: true,
+//           radius: 2
+//         }
+//       },
+//       light: {
+//         main: {
+//           intensity: 2,
+//           shadow: true,
+//           shadowQuality: 'high'
+//         },
+//         ambient: {
+//           intensity: 0.3
+//         }
+//       }
 
-    },
-    series: [{
-      type: 'bar3D',
-      coordinateSystem: 'mapbox3D',
-      shading: 'lambert',
-      minHeight: 0.1,
-      barSize: 0.1,
-      data: data,
-      silent: true,
-      animationEasingUpdate: 2000
-    }]
-
-
-  });
+//     },
+//     series: [{
+//       type: 'bar3D',
+//       coordinateSystem: 'mapbox3D',
+//       shading: 'lambert',
+//       minHeight: 0.1,
+//       barSize: 0.1,
+//       data: data,
+//       silent: true,
+//       animationEasingUpdate: 2000
+//     }]
 
 
-}
+//   });
+
+
+// }
 
 function DrawCrtl(props) {
 
@@ -95,6 +109,14 @@ function DrawCrtl(props) {
       <p>测量结果</p>
       <div id="calculated-area"></div>
     </div>
+
+  )
+}
+
+function MapTitle(props) {
+  return (
+
+    <div id="map-title">{props.title}</div>
 
   )
 }
@@ -121,6 +143,7 @@ class App extends React.Component {
         { "fadfaf": "fadsfd" }
       ],
       tableshow: false,
+      mapTitle: "中国地图"
     }
     // this.hideDrawBox = this.hideDrawBox.bind(this);
     // this.showDrawBox = this.showDrawBox.bind(this);
@@ -136,6 +159,7 @@ class App extends React.Component {
         </div>
         <TableContainer tableshow={this.state.tableshow} featuredata={this.state.featuredata} />
         <canvas id="deck-canvas" className="trcl"></canvas>
+        <MapTitle className='mapTitle' title={this.state.mapTitle} />
 
       </div>
 
@@ -165,70 +189,36 @@ class App extends React.Component {
       "dark": 'mapbox://styles/mapbox/dark-v10',
       "satelite-streets": 'mapbox://styles/mapbox/satellite-streets-v11',
       "navi_day": 'mapbox://styles/mapbox/navigation-guidance-day-v4',
-      'hillshading': 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g'
+      'hillshading': 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g',
+      'mymap': 'mapbox://styles/xiaomozi/ckbiw7e9v004y1ip4ookctquy'
     };
-    mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
+
+    var mytoken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tibTNoeTd1MGhkcjJycG85aW55MzdjeiJ9.yxRH4UcmeNF0HR1VdNMFIQ'
+    // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
+    mapboxgl.accessToken = mytoken;
     const app = {};
-    // this.app = app;
+    app.me = this;
     const map = new mapboxgl.Map({
       container: "map",
-      style: style.light, // stylesheet location
+      style: style.mymap, // stylesheet location
       center: [106, 30.0], // starting position [lng, lat]
       zoom: 4,// starting zoom
+      // attributionControl:false,
+      // customAttribution:"@map4d",
       // interactive:false,
       // center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
       zoom: INITIAL_VIEW_STATE.zoom,
       bearing: INITIAL_VIEW_STATE.bearing,
       pitch: INITIAL_VIEW_STATE.pitch
     });
+    app.map = map;
 
 
-    //  const deck = new Deck({
-    //   canvas: 'deck-canvas',
-    //   width: '100%',
-    //   height: '100%',
-    //   initialViewState: INITIAL_VIEW_STATE,
-    //   controller: true,
-    //   onViewStateChange: ({ viewState }) => {
-    //     map.jumpTo({
-    //       center: [viewState.longitude, viewState.latitude],
-    //       zoom: viewState.zoom,
-    //       bearing: viewState.bearing,
-    //       pitch: viewState.pitch
-    //     });
-    //   },
-    //   layers: [
-    //     new GeoJsonLayer({
-    //       id: 'airports',
-    //       data: air,
-    //       // Styles
-    //       filled: true,
-    //       pointRadiusMinPixels: 2,
-    //       pointRadiusScale: 2000,
-    //       getRadius: f => 11 - f.properties.scalerank,
-    //       getFillColor: [200, 0, 80, 180],
-    //       // Interactive props
-    //       pickable: true,
-    //       autoHighlight: true,
-    //       onClick: info =>
-    //         // eslint-disable-next-line
-    //         info.object && alert(`${info.object.properties.name} (${info.object.properties.abbrev})`)
-    //     }),
-    //     // new ArcLayer({
-    //     //   id: 'arcs',
-    //     //   data: air,
-    //     //   dataTransform: d => d.features.filter(f => f.properties.scalerank < 4),
-    //     //   // Styles
-    //     //   getSourcePosition: f => [112.4531566, 31.4709959], // London
-    //     //   getTargetPosition: f => f.geometry.coordinates,
-    //     //   getSourceColor: ()=>[0, 128, 200],
-    //     //   getTargetColor: ()=>[200, 0, 80],
-    //     //   getWidth: ()=>1
-    //     // })
-    //   ]
-    // });
-
-
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl
+    });
+    map.addControl(geocoder)
 
 
     map.on('click', () => {
@@ -270,7 +260,7 @@ class App extends React.Component {
         // map.setStyle(style.styleUrl);
         // map.moveLayer()
       },
-    }), 'top-right');
+    }), 'bottom-right');
 
     // map.addControl(new CompassControl(), 'top-right');
     map.addControl(new mapboxgl.NavigationControl());
@@ -287,48 +277,114 @@ class App extends React.Component {
 
 
     const tool = new Toolbar();
-    tool.addTool("热", (e) => {
-      let btn = e.target;
-      if (btn.close) {
+    map.addControl(tool);
+
+    map.on('load', () => {
+     
+      tool.addTool("筑", Tools.addBuilding);
+
+    })
+    // const tool = new Toolbar();
+    // map.addControl(tool);
+
+    tool.addTool("热", (m) => {
+      debugger;
+      if (app.hotLayer) {
 
         removeEarthquake();
-        btn.close = false;
+        this.setState({
+          mapTitle:""
+        })
+        app.hotLayer = false;
 
       } else {
         earthquakes();
-        btn.close = true;
+        updateMapTitle('地震热力地图')
+        app.hotLayer = true;
       }
     });
 
-    tool.addTool('量', (e) => {
-      draw();
-    })
+    // tool.addTool('量', (e) => {
+    //   draw();
+    // })
 
-    tool.addTool("动", (e) => {
-      moveSin()
-    })
+    // tool.addTool("动", (e) => {
+    //   moveSin()
+    // })
 
-    tool.addTool("省", (e) => {
-      var me = this;
-      addProvince(me)
-    })
-    tool.addTool("筑", (e) => {
-      addBuilding();
-    })
+    // tool.addTool("省", (e) => {
+    //   var me = this;
+    //   addProvince(me)
+    // })
 
-    tool.addTool("聚", (e) => {
-      cluster();
-    })
+    // tool.addTool("筑", addBuilding);
 
-    tool.addTool("飞", (e) => {
+    // tool.addTool("聚", (e) => {
+    //   cluster();
+    // })
 
-      ODFly();
-    })
+    // tool.addTool("飞", (e) => {
 
-    map.addControl(tool)
+    //   ODFly();
+    // });
+
+    // tool.addTool('瞰', (e) => {
+    //   overView();
+    // })
+
+    // tool.addTool('撞',()=>{
+    //   map.addLayer(hexagonLayer,'waterway-label')
+    //   map.flyTo({
+    //     center:[-2.67,52.74]
+    //   });
+    //   // debugger;
+
+    //   updateMapTitle('英国交通事故地图')
+
+    // })
+
+    // tool.addTool('迁',()=>{
+    //   map.addLayer(arcsLayer,'waterway-label');
+    //   map.addLayer(myDeckLayer,'waterway-label');
+
+    //   map.flyTo({
+    //     center:[-92.67,35.74]
+    //   });
+    //   updateMapTitle('美国居民迁徙地图')
+    // })
+
+
+
+
 
     var msgbox = new MsgBox();
     map.addControl(msgbox, 'top-right');
+
+    function updateMapTitle(newtitle) {
+      app.me.setState({
+        mapTitle: newtitle ? newtitle : "地图"
+      })
+    }
+
+    function overView() {
+
+      if (app.overview) {
+        map.removeControl(app.overview);
+        app.overview = undefined;
+
+
+      } else {
+        app.overview = new Minimap({
+          center: map.getCenter(),
+          zoom: 2,
+          style: style.light,
+        });
+        map.addControl(app.overview, 'bottom-left');
+
+      }
+
+
+    }
 
     function moveSin() {
 
@@ -491,27 +547,36 @@ class App extends React.Component {
 
 
     map.on('load', function () {
+      // map.addLayer(myDeckLayer,'waterway-label');
+      // map.addLayer(hexagonLayer,'waterway-label');
+      // map.addLayer(hexagonLayer(),'waterway-label')
+
+      // let echartslayer = new EchartsLayer(map,option);
+
+
       // console.log(map.getStyle().layers)
       // console.log(map.getStyle().sources);//mapbox://mapbox.mapbox-streets-v8
-      map.addSource("dems", {
-        "type": "raster-dem",
-        "url": "mapbox://mapbox.terrain-rgb"
+      // map.addSource("dems", {
+      //   "type": "raster-dem",
+      //   "url": "mapbox://mapbox.terrain-rgb"
 
-      })
+      // })
 
-      map.addLayer({
-        'id': "dem",
-        "source": "dems",
-        'type': 'hillshade',
-        'paint': {
-          'hillshade-highlight-color': 'cyan',
-          // 'hillshade-accent-color':'blue',
-          'hillshade-shadow-color':'olive',
-          'hillshade-illumination-direction':90,
-          'hillshade-illumination-anchor':'map'
-        }
+      // map.addLayer({
+      //   'id': "dem",
+      //   "source": "dems",
+      //   'type': 'hillshade',
+      //   'paint': {
+      //     'hillshade-highlight-color': '#0dcae3',
+      //     'hillshade-accent-color':'#0dcae3',
+      //     'hillshade-shadow-color':'black',
+      //     'hillshade-illumination-direction':90,
+      //     'hillshade-exaggeration':0.56,
+      //     'hillshade-illumination-anchor':'map'
+      //   }
 
-      })
+      // })
+
 
       var size = 200;
 
@@ -741,6 +806,8 @@ class App extends React.Component {
         'data': route
       });
 
+
+
       map.addSource(pointSource, {
         'type': 'geojson',
         'data': point
@@ -883,7 +950,7 @@ class App extends React.Component {
           layers: ['clusters']
         });
         var clusterId = features[0].properties.cluster_id;
-        map.getSource('earthquakes').getClusterExpansionZoom(
+        map.getSource(earthquakes).getClusterExpansionZoom(
           clusterId,
           function (err, zoom) {
             if (err) return;
@@ -1093,58 +1160,7 @@ class App extends React.Component {
 
     }
 
-    function addBuilding() {
-      if (map.getLayer("3d-buildings")) {
-        return;
-      }
-      map.flyTo({
-        center: [121.50, 31.24],
-        zoom: 16,
-        speed: 2,
-        curve: 1,
 
-      })
-      var layers = map.getStyle().layers;
-
-      // var labelLayerId;
-      for (var i = 0; i < layers.length; i++) {
-        if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
-          app.labelLayerId = layers[i].id;
-          break;
-        }
-      }
-      map.addLayer({
-        'id': '3d-buildings',
-        'source': 'composite',
-        'source-layer': 'building',
-        'filter': ['==', 'extrude', 'true'],
-        'type': 'fill-extrusion',
-        'minzoom': 13,
-        'paint': {
-          'fill-extrusion-color': [
-            "interpolate", ["linear"], ["get", "height"],
-            0, "green",
-            10.05, "red",
-            100, "yellow"
-          ],
-
-          // 使用“插值”表达式为
-          // 建筑物作为用户放大
-          'fill-extrusion-height': [
-            "interpolate", ["linear"], ["zoom"],
-            15, 100,
-            15.05, ["get", "height"]
-          ],
-          'fill-extrusion-base': [
-            "interpolate", ["linear"], ["zoom"],
-            15, 0,
-            15.05, ["get", "min_height"]
-          ],
-          'fill-extrusion-opacity': .6
-        }
-      }, app.labelLayerId);
-
-    }
     function addProvince(me) {
       const provinceid = "province";
 

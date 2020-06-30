@@ -28,9 +28,9 @@ export default class Toolbar{
         var name = name?name:"tool"
         let btn = document.createElement('button');
         btn.innerText = name;
-        btn.onclick = callback;
+        btn.onclick = (e) => {callback(this._map,e)};
         this._div.appendChild(btn);
-        return btn;
+        return this;
     }
 
 }
