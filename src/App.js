@@ -102,13 +102,13 @@ class App extends React.Component {
       return;
     }
     let me = this;
-    const app ={
-      start:function(){
+    const app = {
+      start: function () {
         this.initMap();
         this.initControls();
       },
 
-      initMap:function(){
+      initMap: function () {
         const INITIAL_VIEW_STATE = {
           latitude: 106,
           longitude: 30,
@@ -116,8 +116,8 @@ class App extends React.Component {
           bearing: 0,
           pitch: 45
         };
-    
-    
+
+
         const style = {
           "streets": 'mapbox://styles/mapbox/streets-v11',
           "light": 'mapbox://styles/mapbox/light-v10',
@@ -127,7 +127,7 @@ class App extends React.Component {
           'hillshading': 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g',
           'mymap': 'mapbox://styles/xiaomozi/ckbiw7e9v004y1ip4ookctquy'
         };
-    
+
         var mytoken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tibTNoeTd1MGhkcjJycG85aW55MzdjeiJ9.yxRH4UcmeNF0HR1VdNMFIQ'
         // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
         mapboxgl.accessToken = mytoken;
@@ -144,13 +144,13 @@ class App extends React.Component {
         this.map = map;
         this.style = style;
         map.VRApp = me;
-    
+
         map.on('click', () => {
           me.setState({ tableshow: false })
         })
-       },
+      },
 
-       initControls:function(){
+      initControls: function () {
         let map = this.map;
         let style = this.style;
         const geocoder = new MapboxGeocoder({
@@ -158,7 +158,7 @@ class App extends React.Component {
           mapboxgl: mapboxgl
         });
         map.addControl(geocoder)
-    
+
         map.addControl(new StylesControl({
           styles: [
             {
@@ -175,7 +175,7 @@ class App extends React.Component {
               tyleName: "light",
               sstyleUrl: "mapbox://styles/mapbox/light-v10"
             },
-               {
+            {
               label: "夜间模式",
               styleName: "dark",
               styleUrl: style.dark
@@ -188,7 +188,7 @@ class App extends React.Component {
           onChange: (style) => {
             // debugger;
             // var layers = map.getStyle();
-    
+
             // layers = layers.layers;
             // console.log(layers);
             // console.log(style);
@@ -196,35 +196,36 @@ class App extends React.Component {
             // map.moveLayer()
           },
         }), 'bottom-right');
-    
+
         map.addControl(new CompassControl(), 'top-right');
         // // map.addControl(new mapboxgl.NavigationControl());
         map.addControl(new ZoomControl(), 'top-right');
-    
+
         // map.addControl(new InspectControl(), 'bottom-right');
         // // map.addControl(new TooltipControl({ layer: '$fill' }));
-    
+
         var scale = new mapboxgl.ScaleControl({
           maxWidth: 80,
           unit: 'imperial'
-    
+
         });
         map.addControl(scale);
         scale.setUnit('metric');
-  
+
         const tool = new Toolbar();
         map.addControl(tool);
         tool.addTool("筑", Tools.addBuilding);
-        tool.addTool("量",Tools.drawControl);
-        tool.addTool("省",Tools.addProvince);
-        tool.addTool("始", ()=> window.location.href="/")
-        tool.addTool("事",Tools.addHexagonLayer);
-        tool.addTool('迁',Tools.addEaseLayer);
-        tool.addTool('飞',Tools.ODFly);
-        tool.addTool('热',Tools.addHotLayer);
-        tool.addTool("聚",Tools.addCluster)
+        tool.addTool("事", Tools.addHexagonLayer);
+        tool.addTool('迁', Tools.addEaseLayer);
+        tool.addTool('飞', Tools.ODFly);
+        tool.addTool('热', Tools.addHotLayer);
+        tool.addTool("聚", Tools.addCluster);
+        tool.addTool("省", Tools.addProvince);
+        tool.addTool("量", Tools.drawControl);
         tool.addTool('瞰', Tools.overView);
-  
+        tool.addTool("始", () => window.location.href = "/")
+
+
       }
     };
 
