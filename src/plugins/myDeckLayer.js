@@ -3,15 +3,19 @@ import * as d3 from 'd3';
 
 import { ScatterplotLayer, ArcLayer, LineLayer, PathLayer } from '@deck.gl/layers';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
+import {TripsLayer} from '@deck.gl/geo-layers';
 import { MapboxLayer } from '@deck.gl/mapbox';
+
+import trips from '../data/trips.json';
 import coutries from '../data/coutries.json';
 import buslines from '../data/heatmap-data.csv'
 
 // d3.csv(buslines).then((data)=>{console.log(data)})
 // migrate out
-const SOURCE_COLOR = [166, 3, 3, 100];
+const SOURCE_COLOR = [3, 200, 3, 100];
 // migrate in
-const TARGET_COLOR = [35, 181, 184, 100];
+const TARGET_COLOR = [166, 3, 3, 100];
+// const TARGET_COLOR = [35, 181, 184, 100];
 const RADIUS_SCALE = d3.scaleSqrt().domain([0, 8000]).range([1000, 20000]);
 const WIDTH_SCALE = d3.scaleLinear().domain([0, 1000]).range([1, 4]);
 
@@ -117,8 +121,52 @@ const myDeckLayer = new MapboxLayer({
 
 });
 
+export const tripLayer = new MapboxLayer({
+    type:TripsLayer,
+    id: 'trips',
+    data: trips,
+    getPath: d => d.path,
+    getTimestamps: d => d.timestamps,
+    getColor: d => (d.vendor === 0 ? [253, 128, 93] : [23, 184, 190]),
+    opacity: 0.3,
+    widthMinPixels: 2,
+    rounded: true,
+    trailLength:180,
+    currentTime: (Date.now() / 1000 % 1800) * 30,
 
+    shadowEnabled: false
+});
 
+ const tripsLayer = function(){
+
+    function _animate() {
+        const loopLength = 1800, // unit corresponds to the timestamp in source data
+          animationSpeed = 30; // unit time per second
+        
+        const timestamp = Date.now() / 1000;
+        const loopTime = loopLength / animationSpeed;
+    
+       
+          this.time = ((timestamp % loopTime) / loopTime) * loopLength ;
+        
+        this._animationFrame = window.requestAnimationFrame(_animate);
+      }
+
+    const tripsLayer = new MapboxLayer({
+        id: 'trips',
+        data: trips,
+        getPath: d => d.path,
+        getTimestamps: d => d.timestamps,
+        getColor: d => (d.vendor === 0 ? [253, 128, 93] : [23, 184, 190]),
+        opacity: 0.3,
+        widthMinPixels: 2,
+        rounded: true,
+        trailLength:180,
+        currentTime: (Date.now() / 1000 % 1800) * 30,
+    
+        shadowEnabled: false
+    });
+}
 
 export const arcsLayer = new MapboxLayer({
     type: ArcLayer,
@@ -126,16 +174,20 @@ export const arcsLayer = new MapboxLayer({
     data: loadData(coutries)[1],
     // brushRadius: 100000,
     getStrokeWidth: d => WIDTH_SCALE(d.value),
-    opacity: 0.6,
+    opacity: 1,
     pickable: true,
-    getWidth: 1,
+    getWidth: 2,
+    getTilt:60,
     autoHighlight:true,
-    greatCircle:true,
+    greatCircle:false,
     getSourcePosition: d => d.source,
     getTargetPosition: d => d.target,
     getSourceColor: SOURCE_COLOR,
     getTargetColor: TARGET_COLOR
 });
+
+
+
 const _hexagonLayer = function () {
     const DATA_URL = '../data/heatmap-data.csv';
     // const OPTIONS = ['radius', 'coverage', 'upperPercentile'];

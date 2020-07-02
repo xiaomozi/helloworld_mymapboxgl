@@ -30,7 +30,9 @@ import './table.css'
 import Tools from './Tools';
 // mapboxgl.accessToken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tiaDdzbHA0MDJzbjJ5bHM0c2NpbjM4aSJ9.NkU21q7-8zIGmPvo8gqRZA';
 
-
+// require('./plugins/threebox.js')
+// import * as Threebox from "./plugins/threebox";
+// console.log(window)
 function DrawCrtl(props) {
 
   return (
@@ -102,6 +104,7 @@ class App extends React.Component {
       return;
     }
     let me = this;
+    // console.log({...Threebox})    
     const app = {
       start: function () {
         this.initMap();
@@ -136,7 +139,8 @@ class App extends React.Component {
           container: "map",
           style: style.mymap, // stylesheet location
           center: [106, 30.0], // starting position [lng, lat]
-          zoom: 4,// starting zoom
+          // zoom: 18,// starting zoom
+          // interactive:false,
           zoom: INITIAL_VIEW_STATE.zoom,
           bearing: INITIAL_VIEW_STATE.bearing,
           pitch: INITIAL_VIEW_STATE.pitch
@@ -145,9 +149,67 @@ class App extends React.Component {
         this.style = style;
         map.VRApp = me;
 
+        console.log(map);
+
         map.on('click', () => {
           me.setState({ tableshow: false })
         })
+
+        map.on('load', (e) => {
+
+          map.addLayer({
+            id: 'three_layer',
+            type: 'custom',
+            renderingMode: '3d',
+            onAdd: function (map, mbxContext) {
+              this._map = map;
+
+              this.tb = {};
+              this.tb = new window.Threebox(
+                map,
+                mbxContext,
+                { defaultLights: true }
+              );
+              //instantiate a red sphere and position it at the origin lnglat
+              var sphere = this.tb.sphere({ radius: 1000, color: 'red', material: 'MeshStandardMaterial' })
+                .setCoords([106, 30.0]);
+              sphere.name = 'redball';
+              var sphere2 = this.tb.sphere({ radius: 1000, color: 0x0000ff, specular: 0x4488ee, shininess: 120, material: 'MeshPhongMaterial' })
+                .setCoords([107, 30.0]);
+
+              // add sphere to the scene
+              this.tb.add(sphere);
+              this.tb.add(sphere2);
+              // console.log(this,'ddd');
+
+              return map;
+            },
+            onRemove: function (map, mbxContext) {
+
+              this.tb = {};
+
+            },
+            _getcolor: function () {
+              return '#' + Math.floor(Math.random() * 16777215).toString(16);
+            },
+            render: function (gl, matrix) {
+              // let ball = window.tb.world.children.filter((mesh) => mesh.name == 'redball');
+              // ball[0].material.color.set(this._getcolor());
+
+              this.tb.update();
+            }
+          });
+
+          // map.on('click', (e) => {
+            // e.preventDefault();
+            // const tb = map.getLayer('three_layer').implementation.tb;
+            // const meshball = tb.world.children[0];
+            
+          // })
+
+        })
+
+
       },
 
       initControls: function () {
@@ -173,7 +235,7 @@ class App extends React.Component {
             {
               label: "白天模式",
               tyleName: "light",
-              sstyleUrl: "mapbox://styles/mapbox/light-v10"
+              styleUrl: "mapbox://styles/mapbox/light-v10"
             },
             {
               label: "夜间模式",
@@ -221,6 +283,9 @@ class App extends React.Component {
         tool.addTool('热', Tools.addHotLayer);
         tool.addTool("聚", Tools.addCluster);
         tool.addTool("省", Tools.addProvince);
+        // tool.addTool("trip", Tools.addTripLayer);
+
+
         tool.addTool("量", Tools.drawControl);
         tool.addTool('瞰', Tools.overView);
         tool.addTool("始", () => window.location.href = "/")
