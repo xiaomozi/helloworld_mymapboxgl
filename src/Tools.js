@@ -1,15 +1,18 @@
 import MapboxDraw from 'mapbox-gl-draw';
 import turf from 'turf';
-import {Popup} from 'mapbox-gl';
+import { Popup } from 'mapbox-gl';
 import 'mapbox-gl-draw/dist/mapbox-gl-draw.css'
 // import turf from 'turf';
 import './DrawControInfo.css';
 // import { map } from 'd3';
 
-import myDeckLayer, { hexagonLayer, arcsLayer } from './plugins/myDeckLayer';
+import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer } from './plugins/myDeckLayer';
 import earthquakedata from './data/earthquakes.json';
 import Minimap from './plugins/mapboxgl-minimapControl';
 
+
+import provincedata from './data/chinamap.json';
+import guangdong from './data/guangdong.json';
 
 function addBuilding(map) {
   let app = {};
@@ -70,7 +73,7 @@ function addBuilding(map) {
 
 
 function drawControl(map) {
-  map.Controls = map.Controls?map.Controls:{};
+  map.Controls = map.Controls ? map.Controls : {};
   if (map.Controls.draw) {
     map.removeControl(map.Controls.draw);
     hideDrawBox();
@@ -154,12 +157,21 @@ function drawControl(map) {
 
 }
 
-//add province layer 
-function addProvince(map) {
-  const provinceid = "province";
+function addGeojsonLayer(map, json, level) {
+  //add level parameter to judge the country or province level
+  let provinceid = "province";
+  let resourceid = "province";
+  let data = provincedata;
 
-  if (map.getLayer("province")) {
-    map.removeLayer('province').removeSource("province");
+
+  if (level) {
+    provinceid = level;
+    resourceid = level;
+    data = json;
+
+  }
+  if (map.getLayer(provinceid)) {
+    map.removeLayer(provinceid).removeSource(resourceid);
     return;
   }
   var layers = map.getStyle().layers;
@@ -170,110 +182,32 @@ function addProvince(map) {
       break;
     }
   }
-  debugger;
-  map.addSource('province', {
-    'type': 'vector',
-    'url': 'mapbox://zhuwenlong.bpyitk7f'
-  });
+
+
+  map.addSource(resourceid, {
+    'type': 'geojson',
+    'data': data
+  })
+
 
   map.addLayer({
-    id: 'province',
-    'source': 'province',
-    'source-layer': 'cn_sheng_polygon',
-    'type': 'fill-extrusion',
-    'minzoom': 1,
-    'maxzoom': 7,
+    id: provinceid,
+    'source': resourceid,
+    // 'source-layer': 'cn_sheng_polygon',
+    'type': 'fill',
     'paint': {
-      'fill-extrusion-base': 0,
-      'fill-extrusion-height': ['*', 10000, ["get", 'SHENG_ID']],
-      'fill-extrusion-color': [
-        "match",
-        [
-          "get",
-          "name"
-        ],
-        "湖北",
-        "rgba(204,30,29,1)",
-        "广东",
-        "rgba(239,63,63,1)",
-        "河南",
-        "rgba(239,63,63,1)",
-        "浙江",
-        "rgba(239,63,63,1)",
-        "湖南",
-        "rgba(240,64,64,1)",
-        "安徽",
-        "rgba(240,64,64,1)",
-        "江西",
-        "rgba(241,69,65,1)",
-        "山东",
-        "rgba(247,86,71,1)",
-        "江苏",
-        "rgba(251,98,74,1)",
-        "重庆",
-        "rgba(252,103,75,1)",
-        "四川",
-        "rgba(253,107,76,1)",
-        "黑龙江",
-        "rgba(255,114,80,1)",
-        "北京",
-        "rgba(255,122,86,1)",
-        "上海",
-        "rgba(255,134,96,1)",
-        "河北",
-        "rgba(255,137,99,1)",
-        "福建",
-        "rgba(255,139,101,1)",
-        "广西",
-        "rgba(255,145,106,1)",
-        "陕西",
-        "rgba(255,149,109,1)",
-        "云南",
-        "rgba(255,157,116,1)",
-        "海南",
-        "rgba(255,160,119,1)",
-        "贵州",
-        "rgba(255,162,121,1)",
-        "天津",
-        "rgba(255,162,121,1)",
-        "山西",
-        "rgba(255,162,121,1)",
-        "辽宁",
-        "rgba(255,166,124,1)",
-        "香港",
-        "rgba(255,168,126,1)",
-        "吉林",
-        "rgba(255,168,126,1)",
-        "甘肃",
-        "rgba(255,168,126,1)",
-        "新疆",
-        "rgba(255,175,132,1)",
-        "内蒙古",
-        "rgba(255,175,132,1)",
-        "宁夏",
-        "rgba(255,175,132,1)",
-        "台湾",
-        "rgba(255,191,149,1)",
-        "青海",
-        "rgba(255,199,157,1)",
-        "澳门",
-        "rgba(255,199,157,1)",
-        "西藏",
-        "rgba(255,208,166,1)",
-        "black"
-      ]
-    }
+      "fill-outline-color": "rgba(3,3,3,50)",
+      "fill-opacity": 0.3,
+      "fill-color": "rgba(255,255,255,0)"
+    },
   }, labelLayerId);
-
-  
   // var me = this;
-  map.on("click", "province", (e) => {
+  map.on("click", provinceid, (e) => {
     if (e.features.length < 1) {
       return
     };
 
     let properties = e.features[0].properties;
-
     //图层过滤器
     //map.setFilter(provinceid,["in","SHENG_ID",properties.SHENG_ID])
 
@@ -287,52 +221,123 @@ function addProvince(map) {
 
     map.VRApp.setState({ featuredata: featureinfo, tableshow: true });
 
+    function getGeoJsonBound(e) {
+      // get feature bounds
+      let coordinates = e.features[0].geometry.coordinates;
+      let type = e.features[0].geometry.type;
+
+      let bounds = coordinates.map((pologon) => {
+        let outer = pologon[0]; //strange enough , if type == pologon outring is pologon itself
+        if (pologon.length >= 2) {
+          outer = pologon
+        }
+        let outBoundmax = outer.reduce((pre, cur) => {
+          let lng = pre[0] > cur[0] ? pre[0] : cur[0];
+          let lat = pre[1] > cur[1] ? pre[1] : cur[1];
+          return [lng, lat]
+        }, [0, 0])
+
+        let outBoundmin = outer.reduce((pre, cur) => {
+          let lng = pre[0] < cur[0] ? pre[0] : cur[0];
+          let lat = pre[1] < cur[1] ? pre[1] : cur[1];
+          return [lng, lat]
+        })
+        return [outBoundmin, outBoundmax]
+      })
+
+      let bound = bounds.reduce((bound, cur) => {
+        let minLng = Math.min(cur[0][0], cur[1][0], bound[0][0], bound[1][0]);
+        let minLat = Math.min(cur[0][1], cur[1][1], bound[0][1], bound[1][1]);
+        let maxLng = Math.max(cur[0][0], cur[1][0], bound[0][0], bound[1][0]);
+        let maxLat = Math.max(cur[0][1], cur[1][1], bound[0][1], bound[1][1]);
+        return [[minLng, minLat], [maxLng, maxLat]]
+      })
+
+      return bound
+
+    }
+
+    // console.log(bound);
+
+
+    map.fitBounds(getGeoJsonBound(e));
+
   })
 
-  
+}
+//add province layer 
+function addProvince(map) {
+  addGeojsonLayer(map);
+  addGeojsonLayer(map, guangdong, 'guangdong');
+
+
+
 }
 
-function addHexagonLayer(map){
-  map.addLayer(hexagonLayer,'waterway-label')
-      map.flyTo({
-        center:[-2.67,52.74]
-      });
-      // debugger;
+function addHexagonLayer(map) {
+  map.addLayer(hexagonLayer, 'waterway-label')
+  map.flyTo({
+    center: [-2.67, 52.74]
+  });
+  // debugger;
 
-      updateMapTitle(map,'英国交通事故地图')
+  updateMapTitle(map, '英国交通事故地图')
 }
 
-function addEaseLayer(map){
-  map.addLayer(arcsLayer,'waterway-label');
-  map.addLayer(myDeckLayer,'waterway-label');
+function addEaseLayer(map) {
+  map.addLayer(arcsLayer, 'waterway-label');
+  map.addLayer(myDeckLayer, 'waterway-label');
 
   map.flyTo({
-    center:[-92.67,35.74]
+    center: [-92.67, 35.74]
   });
-  updateMapTitle(map,'美国居民迁徙地图')
+  updateMapTitle(map, '美国居民迁徙地图')
 }
 
 function ODFly(map) {
+  updateMapTitle(map, '全国航班飞行地图')
+
+  //Math.ceil(Math.random()*15);   
+  //center:【120，30】
+  let center = [121.81, 31.152]
   let ODs = [];
+  for (let i = 0; i < 100; i++) {
+    ODs.push([[center[0], center[1]], [center[0] - Math.ceil(Math.random() * 20), center[1] + Math.ceil(Math.random() * 20)]])
+  }
+
+
   ODs.push([[112.0, 22.0], [115.34, 40.04]])
   ODs.push([[113.0, 22.0], [115.34, 40.04]])
   ODs.push([[115.0, 22.0], [115.34, 40.04]])
 
-  let app  = map.VRApp;
+  ODs.push([[121.28, 31.31], [102.47, 18.87]])
+  ODs.push([[104.24, 30.716], [102.47, 18.87]])
+  ODs.push([[113.64, 23.27], [102.47, 18.87]])
+  ODs.push([[114.09, 30.07], [102.47, 18.87]])
+
+  let app = map.VRApp;
+  let routeSource = "flyRoute";
+  let pointSource = "flyPoint";
+  let routeLayerId = routeSource + "Layer";
+  let pointLayerId = pointSource + "Layer";
   if (app.flied) {
+
     cancelAnimationFrame(app.moveHandlerId);
     // remove layers
-    var layers = map.getStyle().layers;
+    // var layers = map.getStyle().layers;
 
-    var flys = layers.filter((lay) => lay.id.indexOf('fly') == 0)
+    // var flys = layers.filter((lay) => lay.id.indexOf('fly') == 0)
 
-    flys.map((layer) => map.removeLayer(layer));
+    // flys.map((layer) => map.removeLayer(layer));
+    map.removeLayer(routeLayerId);
+    map.removeLayer(pointLayerId);
+    map.removeSource(routeSource)
+    map.removeSource(pointSource)
+    // var sources = map.getStyle().sources;
+    // // Object.keys(sources)
+    // var srcs = Object.keys(sources).filter((src) => src.indexOf('fly') == 0)
 
-    var sources = map.getStyle().sources;
-    // Object.keys(sources)
-    var srcs = Object.keys(sources).filter((src) => src.indexOf('fly') == 0)
-
-    srcs.map((src) => map.removeSource(src));
+    // srcs.map((src) => map.removeSource(src));
     app.flied = false;
     return;
   }
@@ -389,7 +394,7 @@ function ODFly(map) {
   // addRoute([111.0, 22.0], [115.34, 40.04]);
   // addRoute([112.0, 21.0], [115.34, 40.04]);
 
-
+  const initRoute = Object.assign({}, route);
 
   // A single point that animates along the route.
   // Coordinates are initially set to origin.
@@ -406,7 +411,8 @@ function ODFly(map) {
       // }
     ]
   };
-  var step = 500;
+  var step = 100;
+  let stepDistance = 4;
   // point.features.pop();
   function _updateroute() {
     // var distances = [],arcs = [];
@@ -415,7 +421,7 @@ function ODFly(map) {
       // distances.push(distance);
       let arc = [];
       // const step = 500;
-      let stepDistance = distance / step;
+      // let stepDistance = distance / step;
 
       for (let i = 0; i < distance; i += stepDistance) {
         let segment = turf.along(feature, i, 'kilometers');
@@ -457,12 +463,18 @@ function ODFly(map) {
   // // Update the route with calculated arc coordinates
   // route.features[0].geometry.coordinates = arc;
 
-  // Used to increment the value of the point measurement against the route.
-  let routeSource = "fly" + (Math.random() + Date.now()).toString();
-  let pointSource = "fly" + (Math.random() + Date.now()).toString();
+  // // Used to increment the value of the point measurement against the route.
+  // let routeSource = "flyRoute" ;
+  // // let routeSource = "fly" + (Math.random() + Date.now()).toString();
+  // let pointSource = "flyPoint" ;
+  // // let pointSource = "fly" + (Math.random() + Date.now()).toString();
+  // let routeLayerId = routeSource + "Layer";
+  // let pointLayerId = pointSource + "Layer";
+
+
   map.addSource(routeSource, {
     'type': 'geojson',
-    'data': route
+    'data': initRoute
   });
 
 
@@ -472,15 +484,13 @@ function ODFly(map) {
     'data': point
   });
 
-  let routeLayerId = routeSource + "Layer";
-  let pointLayerId = pointSource + "Layer";
   map.addLayer({
     'id': routeLayerId,
     'source': routeSource,
     'type': 'line',
     'paint': {
       'line-width': 1.5,
-      'line-color': 'blue',
+      'line-color': 'rgba(160, 32, 240, 1)',
       'line-blur': 1
     }
   });
@@ -498,20 +508,30 @@ function ODFly(map) {
     }
   });
 
-
+  const maxNum = route.features.reduce((me, next) => {
+    return me > next.geometry.coordinates.length ? me : next.geometry.coordinates.length
+  })
   var counter = 0;
   var moveHandlerId;
-  function animate() {
+  function animate(t) {
+    console.log(counter)
+    // console.log(t,'time');
 
+    if (counter > maxNum) {
+      cancelAnimationFrame(app.moveHandlerId);
+      alert("done")
+      return;
+    }
     route.features.map((line, index) => {
       let p = point.features[index];
-      console.log(counter, index)
-
-      p.geometry.coordinates = line.geometry.coordinates[counter];
-      p.properties.bearing = turf.bearing(
-        turf.point(line.geometry.coordinates[0]),
-        turf.point(line.geometry.coordinates[1])
-      )
+      // console.log(counter, index)
+      if (line.geometry.coordinates.length > counter) {
+        p.geometry.coordinates = line.geometry.coordinates[counter];
+        p.properties.bearing = turf.bearing(
+          turf.point(line.geometry.coordinates[0]),
+          turf.point(line.geometry.coordinates[1])
+        )
+      }
 
     });
 
@@ -519,9 +539,9 @@ function ODFly(map) {
     map.getSource(pointSource).setData(point);
 
     // // Request the next frame of animation so long the end has not been reached.
-    if (counter < step) {
-      app.moveHandlerId = requestAnimationFrame(animate);
-    }
+    // if (counter < step) {
+    app.moveHandlerId = requestAnimationFrame(animate);
+    // }
     counter = counter + 1;
   }
 
@@ -530,18 +550,18 @@ function ODFly(map) {
 
 }
 
-function addHotLayer(map){
+function addHotLayer(map) {
   let app = map.VRApp;
   if (app.hotLayer) {
 
     removeEarthquake();
-    updateMapTitle(map,"")
+    updateMapTitle(map, "")
     app.hotLayer = false;
 
   } else {
     earthquakes();
-   
-    updateMapTitle(map,'地震热力地图')
+
+    updateMapTitle(map, '地震热力地图')
     app.hotLayer = true;
   }
   function earthquakes() {
@@ -625,7 +645,7 @@ function addHotLayer(map){
       }
     },
       'waterway-label');
-      let pulsingDot = new _PulsingPointControl();
+    let pulsingDot = new _PulsingPointControl();
     map.addImage('pulsing-dot', pulsingDot, { pixelRatio: 2 });
     map.addLayer({
       id: "earthIcon",
@@ -837,13 +857,13 @@ function addCluster(map) {
   });
 }
 
-function updateMapTitle(map,newtitle) {
+function updateMapTitle(map, newtitle) {
   map.VRApp.setState({
     mapTitle: newtitle ? newtitle : "地图"
   })
 }
 
-function _PulsingPointControl(){
+function _PulsingPointControl() {
   var size = 200;
 
   // implementation of CustomLayerInterface to draw a pulsing dot icon on the map
@@ -914,7 +934,7 @@ function _PulsingPointControl(){
       return true;
     }
   };
-  
+
   return pulsingDot;
 }
 
@@ -938,27 +958,32 @@ function overView(map) {
 
 }
 
-function addRenderDem(map){
+function addRenderDem(map) {
   map.addSource("dems", {
-        "type": "raster-dem",
-        "url": "mapbox://mapbox.terrain-rgb"
+    "type": "raster-dem",
+    "url": "mapbox://mapbox.terrain-rgb"
 
-      })
+  })
 
-      map.addLayer({
-        'id': "dem",
-        "source": "dems",
-        'type': 'hillshade',
-        'paint': {
-          'hillshade-highlight-color': '#0dcae3',
-          'hillshade-accent-color':'#0dcae3',
-          'hillshade-shadow-color':'black',
-          'hillshade-illumination-direction':90,
-          'hillshade-exaggeration':0.56,
-          'hillshade-illumination-anchor':'map'
-        }
+  map.addLayer({
+    'id': "dem",
+    "source": "dems",
+    'type': 'hillshade',
+    'paint': {
+      'hillshade-highlight-color': '#0dcae3',
+      'hillshade-accent-color': '#0dcae3',
+      'hillshade-shadow-color': 'black',
+      'hillshade-illumination-direction': 90,
+      'hillshade-exaggeration': 0.56,
+      'hillshade-illumination-anchor': 'map'
+    }
 
-      })
+  })
+}
+
+function addTripLayer(map) {
+  debugger;
+  map.addLayer(tripLayer, 'waterway-label');
 }
 
 export default {
@@ -972,4 +997,5 @@ export default {
   addCluster,
   overView,
   addRenderDem,
+  addTripLayer,
 };
