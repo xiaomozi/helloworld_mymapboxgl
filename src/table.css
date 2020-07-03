@@ -8,8 +8,9 @@
     background-color:darkkhaki;
     border:  1px solid #F00;
     border-radius: 1em;
-    top:1em;
-    left:0.5em;
+    top:8em;
+    /* left:0.5em; */
+    padding-left: 0em;
     border-spacing: 1em;
     /* z-index: -1; */
 }

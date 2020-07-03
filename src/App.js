@@ -99,6 +99,8 @@ class App extends React.Component {
 
 
   componentDidMount() {
+    console.log(this,'Did Mount')
+
     if (!mapboxgl.supported()) {
       alert('Your browser does not support Mapbox GL');
       return;
@@ -149,7 +151,7 @@ class App extends React.Component {
         this.style = style;
         map.VRApp = me;
 
-        console.log(map);
+        // console.log(map);
 
         map.on('click', () => {
           me.setState({ tableshow: false })
@@ -298,6 +300,28 @@ class App extends React.Component {
 
   }
 
+//  componentWillUnmount(){
+//   console.log(this,'Will unmount')
+
+//  }
+
+//  shouldComponentUpdate(){
+//    return false;
+//  }
+
+//   componentWillUpdate(){
+//     console.log(this,'Will update')
+//     this.setState({mapTitle:"map will update"}) //引发死循环
+//     // this.shouldComponentUpdate()
+//     // return false;
+
+//   }
+
+
+  componentDidUpdate(){
+    console.log(this,'Did update')
+    // this.setState({mapTitle:"map did update"}) //引发死循环
+  }
 }
 
 export default App;
