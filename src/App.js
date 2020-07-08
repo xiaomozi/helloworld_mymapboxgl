@@ -11,8 +11,8 @@ import 'mapbox-gl-controls/theme.css';
 import StylesControl from 'mapbox-gl-controls/lib/styles';
 import CompassControl from 'mapbox-gl-controls/lib/compass';
 import ZoomControl from 'mapbox-gl-controls/lib/zoom';
-import InspectControl from 'mapbox-gl-controls/lib/inspect';
-import TooltipControl from 'mapbox-gl-controls/lib/tooltip';
+// import InspectControl from 'mapbox-gl-controls/lib/inspect';
+// import TooltipControl from 'mapbox-gl-controls/lib/tooltip';
 
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
@@ -30,9 +30,6 @@ import './table.css'
 import Tools from './Tools';
 // mapboxgl.accessToken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tiaDdzbHA0MDJzbjJ5bHM0c2NpbjM4aSJ9.NkU21q7-8zIGmPvo8gqRZA';
 
-// require('./plugins/threebox.js')
-// import * as Threebox from "./plugins/threebox";
-// console.log(window)
 function DrawCrtl(props) {
 
   return (
@@ -63,6 +60,48 @@ function TableContainer(props) {
 
 }
 
+class ThemeData extends React.Component{
+  constructor(props){
+    super(props)
+    this.handleOnchange = this.handleOnchange.bind(this);
+    this.state={
+      value:''
+    }
+  }
+
+  handleOnchange(e){
+  
+    const data = e.target.value;
+    const seperator = ':';
+    const newdata = data.replace(/(，|；|：|,|;|:)/g,seperator)
+    this.setState({value:newdata})
+    let out = {};
+    newdata.split("\n").map((item)=>{
+      if(item.trim().length > 0){
+        let [key,value] = item.split(seperator);
+        out[key] = parseFloat(value);
+      }
+    })
+    const map = this.props.map;
+    debugger;
+    Tools.updateProvinceLayer(map,out);
+    console.log(out);
+  }
+
+  render(){
+    if(this.props.themeData)
+  return(<>
+        <textarea id="themedataTextarea" value={this.state.value} style={{height:500,width:500,position:"relative",top:"4em",left:"1em"}} onChange={this.handleOnchange}></textarea>
+    </>) 
+    else {
+      return <></>
+    }
+  }
+
+}
+
+
+
 class App extends React.Component {
 
   constructor(props) {
@@ -74,6 +113,8 @@ class App extends React.Component {
         { "fadfaf": "fadsfd" }
       ],
       tableshow: false,
+      themeData:false,
+      map:null,
       mapTitle: "中国地图"
     }
     // this.hideDrawBox = this.hideDrawBox.bind(this);
@@ -91,7 +132,8 @@ class App extends React.Component {
         <TableContainer tableshow={this.state.tableshow} featuredata={this.state.featuredata} />
         <canvas id="deck-canvas" className="trcl"></canvas>
         <MapTitle className='mapTitle' title={this.state.mapTitle} />
-
+        
+        <ThemeData className ='themedata' themeData = {this.state.themeData} map={this.state.map}/>
       </div>
 
     )
@@ -99,7 +141,7 @@ class App extends React.Component {
 
 
   componentDidMount() {
-    console.log(this,'Did Mount')
+    console.log(this, 'Did Mount')
 
     if (!mapboxgl.supported()) {
       alert('Your browser does not support Mapbox GL');
@@ -111,6 +153,7 @@ class App extends React.Component {
       start: function () {
         this.initMap();
         this.initControls();
+        this.otherOprations();
       },
 
       initMap: function () {
@@ -147,66 +190,82 @@ class App extends React.Component {
           bearing: INITIAL_VIEW_STATE.bearing,
           pitch: INITIAL_VIEW_STATE.pitch
         });
-        this.map = map;
+        me.setState({map:map});// 
+        this.map= map;
         this.style = style;
         map.VRApp = me;
 
         // console.log(map);
 
-        map.on('click', () => {
-          me.setState({ tableshow: false })
+        map.on('click', (e) => {
+          e.preventDefault();
+          
+          if(map.getLayer("selectedFeature")){
+            let data =  {
+                type : "FeatureCollection",
+                features:[
+  
+                ]
+              };
+            map.getSource("selectedFeature").setData(data)
+          } 
+
+          if(me.state.tableshow){
+            me.setState({ tableshow: false })
+
+          }
         })
 
         map.on('load', (e) => {
 
-          map.addLayer({
-            id: 'three_layer',
-            type: 'custom',
-            renderingMode: '3d',
-            onAdd: function (map, mbxContext) {
-              this._map = map;
+          // map.addLayer({
+          //   id: 'three_layer',
+          //   type: 'custom',
+          //   renderingMode: '3d',
+          //   onAdd: function (map, mbxContext) {
+          //     this._map = map;
 
-              this.tb = {};
-              this.tb = new window.Threebox(
-                map,
-                mbxContext,
-                { defaultLights: true }
-              );
-              //instantiate a red sphere and position it at the origin lnglat
-              var sphere = this.tb.sphere({ radius: 1000, color: 'red', material: 'MeshStandardMaterial' })
-                .setCoords([106, 30.0]);
-              sphere.name = 'redball';
-              var sphere2 = this.tb.sphere({ radius: 1000, color: 0x0000ff, specular: 0x4488ee, shininess: 120, material: 'MeshPhongMaterial' })
-                .setCoords([107, 30.0]);
+          //     this.tb = {};
+          //     this.tb = new window.Threebox(
+          //       map,
+          //       mbxContext,
+          //       { defaultLights: true }
+          //     );
+          //     //instantiate a red sphere and position it at the origin lnglat
+          //     var sphere = this.tb.sphere({ radius: 1000, color: 'red', material: 'MeshStandardMaterial' })
+          //       .setCoords([106, 30.0]);
+          //     sphere.name = 'redball';
+          //     var sphere2 = this.tb.sphere({ radius: 1000, color: 0x0000ff, specular: 0x4488ee, shininess: 120, material: 'MeshPhongMaterial' })
+          //       .setCoords([107, 30.0]);
 
-              // add sphere to the scene
-              this.tb.add(sphere);
-              this.tb.add(sphere2);
-              // console.log(this,'ddd');
+          //     // add sphere to the scene
+          //     this.tb.add(sphere);
+          //     this.tb.add(sphere2);
+          //     // console.log(this,'ddd');
 
-              return map;
-            },
-            onRemove: function (map, mbxContext) {
+          //     return map;
+          //   },
+          //   onRemove: function (map, mbxContext) {
 
-              this.tb = {};
+          //     this.tb = {};
 
-            },
-            _getcolor: function () {
-              return '#' + Math.floor(Math.random() * 16777215).toString(16);
-            },
-            render: function (gl, matrix) {
-              // let ball = window.tb.world.children.filter((mesh) => mesh.name == 'redball');
-              // ball[0].material.color.set(this._getcolor());
+          //   },
+          //   _getcolor: function () {
+          //     return '#' + Math.floor(Math.random() * 16777215).toString(16);
+          //   },
+          //   render: function (gl, matrix) {
+          //     // let ball = window.tb.world.children.filter((mesh) => mesh.name == 'redball');
+          //     // ball[0].material.color.set(this._getcolor());
 
-              this.tb.update();
-            }
-          });
+          //     this.tb.update();
+          //   }
+          // });
 
           // map.on('click', (e) => {
-            // e.preventDefault();
-            // const tb = map.getLayer('three_layer').implementation.tb;
-            // const meshball = tb.world.children[0];
-            
+          // e.preventDefault();
+          // const tb = map.getLayer('three_layer').implementation.tb;
+          // const meshball = tb.world.children[0];
+
           // })
 
         })
@@ -250,6 +309,10 @@ class App extends React.Component {
             }
           ],
           onChange: (style) => {
+            // current style
+            // later will change
+         
+        
             // debugger;
             // var layers = map.getStyle();
 
@@ -284,15 +347,47 @@ class App extends React.Component {
         tool.addTool('飞', Tools.ODFly);
         tool.addTool('热', Tools.addHotLayer);
         tool.addTool("聚", Tools.addCluster);
-        tool.addTool("省", Tools.addProvince);
+        tool.addTool("室", Tools.addIndoorLayer);
+
         // tool.addTool("trip", Tools.addTripLayer);
+        tool.addTool("新", ()=>{
+          me.setState({themeData:true})
+        });
 
-
+        tool.addTool("省", Tools.addProvince);
         tool.addTool("量", Tools.drawControl);
         tool.addTool('瞰', Tools.overView);
-        tool.addTool("始", () => window.location.href = "/")
+        tool.addTool("始", () => map.setStyle(this.style.mymap))
 
+      },
+      otherOprations: function () {
+        let map = this.map;
+        map.on('load',()=>{
+         
+          map.addSource("selectedFeature",{
+         
+            type: "geojson",
+            data: {
+              type : "FeatureCollection",
+              features:[
 
+              ]
+            }
+          
+        });
+        map.addLayer({
+          id: "selectedFeature",
+          'source': "selectedFeature",
+          'type': 'fill-extrusion',
+          'paint': {
+            "fill-extrusion-color": "rgb(255,255,3)",
+            "fill-extrusion-opacity": 0.4,
+            "fill-extrusion-height": 8000
+          },
+        })
+        })
+        
+       
       }
     };
 
@@ -300,26 +395,26 @@ class App extends React.Component {
 
   }
 
-//  componentWillUnmount(){
-//   console.log(this,'Will unmount')
+  //  componentWillUnmount(){
+  //   console.log(this,'Will unmount')
 
-//  }
+  //  }
 
-//  shouldComponentUpdate(){
-//    return false;
-//  }
+  //  shouldComponentUpdate(){
+  //    return false;
+  //  }
 
-//   componentWillUpdate(){
-//     console.log(this,'Will update')
-//     this.setState({mapTitle:"map will update"}) //引发死循环
-//     // this.shouldComponentUpdate()
-//     // return false;
+  //   componentWillUpdate(){
+  //     console.log(this,'Will update')
+  //     this.setState({mapTitle:"map will update"}) //引发死循环
+  //     // this.shouldComponentUpdate()
+  //     // return false;
 
-//   }
+  //   }
 
 
-  componentDidUpdate(){
-    console.log(this,'Did update')
+  componentDidUpdate() {
+    // console.log(this, 'Did update')
     // this.setState({mapTitle:"map did update"}) //引发死循环
   }
 }

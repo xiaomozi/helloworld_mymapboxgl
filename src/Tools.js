@@ -1,25 +1,31 @@
-import MapboxDraw from 'mapbox-gl-draw';
-import turf from 'turf';
-import { Popup } from 'mapbox-gl';
-import 'mapbox-gl-draw/dist/mapbox-gl-draw.css'
-// import turf from 'turf';
-import './DrawControInfo.css';
-// import { map } from 'd3';
+import MapboxDraw from "mapbox-gl-draw";
+import turf from "turf";
+import { randomPoint } from "@turf/random";
 
-import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer } from './plugins/myDeckLayer';
-import earthquakedata from './data/earthquakes.json';
-import Minimap from './plugins/mapboxgl-minimapControl';
+import { Popup } from "mapbox-gl";
+import "mapbox-gl-draw/dist/mapbox-gl-draw.css"
+// import turf from "turf";
+import "./DrawControInfo.css";
+// import { map } from "d3";
+
+import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer } from "./plugins/myDeckLayer";
+import earthquakedata from "./data/earthquakes.json";
+import Minimap from "./plugins/mapboxgl-minimapControl";
 
 
-import provincedata from './data/chinamap.json';
-import guangdong from './data/guangdong.json';
+import provincedata from "./data/chinamap.json";
+import guangdong from "./data/guangdong.json";
+
+import indoorData from "./data/indoor-3d-map.json";
+
 
 function addBuilding(map) {
-  let app = {};
+  let app = map.VRApp;
   // debugger;
   // let map =  app.map;
 
   if (map.getLayer("3d-buildings")) {
+    map.removeLayer("3d-buildings")
     return;
   }
   map.flyTo({
@@ -33,20 +39,20 @@ function addBuilding(map) {
 
   // var labelLayerId;
   for (var i = 0; i < layers.length; i++) {
-    if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
+    if (layers[i].type === "symbol" && layers[i].layout["text-field"]) {
       app.labelLayerId = layers[i].id;
       break;
     }
   }
   map.addLayer({
-    'id': '3d-buildings',
-    'source': 'composite',
-    'source-layer': 'building',
-    'filter': ['==', 'extrude', 'true'],
-    'type': 'fill-extrusion',
-    'minzoom': 13,
-    'paint': {
-      'fill-extrusion-color': [
+    "id": "3d-buildings",
+    "source": "composite",
+    "source-layer": "building",
+    "filter": ["==", "extrude", "true"],
+    "type": "fill-extrusion",
+    "minzoom": 13,
+    "paint": {
+      "fill-extrusion-color": [
         "interpolate", ["linear"], ["get", "height"],
         0, "green",
         10.05, "red",
@@ -55,20 +61,37 @@ function addBuilding(map) {
 
       // 使用“插值”表达式为
       // 建筑物作为用户放大
-      'fill-extrusion-height': [
+      "fill-extrusion-height": [
         "interpolate", ["linear"], ["zoom"],
         15, 100,
         15.05, ["get", "height"]
       ],
-      'fill-extrusion-base': [
+      "fill-extrusion-base": [
         "interpolate", ["linear"], ["zoom"],
         15, 0,
         15.05, ["get", "min_height"]
       ],
-      'fill-extrusion-opacity': .6
+      "fill-extrusion-opacity": .6
     }
   }, app.labelLayerId);
 
+  map.on("click", "3d-buildings", (e) => {
+    e.preventDefault();
+    let properties = e.features[0].properties;
+    //图层过滤器
+    //map.setFilter(provinceid,["in","SHENG_ID",properties.SHENG_ID])
+
+    let featureinfo = [];
+    Object.keys(properties).map((key) => {
+      let data = {};
+      data["字段"] = key;
+      data["值"] = properties[key];
+      featureinfo.push(data);
+    });
+
+    map.VRApp.setState({ featuredata: featureinfo, tableshow: true });
+
+  })
 }
 
 
@@ -91,16 +114,16 @@ function drawControl(map) {
     showDrawBox()
     map.Controls.draw = draw;
 
-    map.on('draw.create', updateArea);
-    map.on('draw.delete', updateArea);
-    map.on('draw.update', updateArea);
+    map.on("draw.create", updateArea);
+    map.on("draw.delete", updateArea);
+    map.on("draw.update", updateArea);
 
   }
 
   function updateArea(e) {
 
     var data = draw.getAll();
-    var answer = document.getElementById('calculated-area');
+    var answer = document.getElementById("calculated-area");
     var result;
     if (data.features.length > 0) {
       let lastFeature = data.features.pop();
@@ -110,9 +133,9 @@ function drawControl(map) {
           result = turf.lineDistance(lastFeature);
           // result = calculateLength(json);
           answer.innerHTML =
-            '<p><strong>' +
+            "<p><strong>" +
             result.toFixed(2) +
-            '</strong></p><p>千米</p>';
+            "</strong></p><p>千米</p>";
           break;
         case "Polygon":
           let json = {}
@@ -124,9 +147,9 @@ function drawControl(map) {
           // restrict to area to 2 decimal points
           var rounded_area = Math.round(result * 100) / 100;
           answer.innerHTML =
-            '<p><strong>' +
+            "<p><strong>" +
             rounded_area +
-            '</strong></p><p>平方米</p>';
+            "</strong></p><p>平方米</p>";
           break;
         case "Point":
           result = lastFeature.geometry.coordinates;
@@ -139,9 +162,9 @@ function drawControl(map) {
       }
 
     } else {
-      answer.innerHTML = '';
-      if (e.type !== 'draw.delete')
-        alert('Use the draw tools to draw a polygon!');
+      answer.innerHTML = "";
+      if (e.type !== "draw.delete")
+        alert("Use the draw tools to draw a polygon!");
     }
   }
 
@@ -161,7 +184,7 @@ function addGeojsonLayer(map, json, level) {
   //add level parameter to judge the country or province level
   let provinceid = "province";
   let resourceid = "province";
-  let data = provincedata;
+  let data = Object.assign({}, provincedata);
 
 
   if (level) {
@@ -172,37 +195,98 @@ function addGeojsonLayer(map, json, level) {
   }
   if (map.getLayer(provinceid)) {
     map.removeLayer(provinceid).removeSource(resourceid);
+    updateMapTitle(map, "中国地图");
+    map.VRApp.setState({ tableshow: false });
+    let selData = {
+      type: "FeatureCollection",
+      features: [
+
+      ]
+    }
+    if (map.getSource("selectedFeature")) {
+      map.getSource("selectedFeature").setData(selData);
+    }
     return;
   }
+  updateMapTitle(map, "中国行省地图");
   var layers = map.getStyle().layers;
   var labelLayerId;
   for (var i = 0; i < layers.length; i++) {
-    if (layers[i].type === 'symbol' && layers[i].layout['text-field']) {
+    if (layers[i].type === "symbol" && layers[i].layout["text-field"]) {
       labelLayerId = layers[i].id;
       break;
     }
   }
 
+  //add a value field and a default value 0 to geojson
+  // add an id to each feature
+  data.features.map((feature, index) => {
+    // feature.properties.value = 255;
+    feature.id = index;
 
-  map.addSource(resourceid, {
-    'type': 'geojson',
-    'data': data
   })
 
+  map.addSource(resourceid, {
+    "type": "geojson",
+    "data": data
+  })
+
+  map.fitBounds(turf.bbox(data));
 
   map.addLayer({
     id: provinceid,
-    'source': resourceid,
-    // 'source-layer': 'cn_sheng_polygon',
-    'type': 'fill',
-    'paint': {
+    "source": resourceid,
+    "type": "fill",
+    "paint": {
       "fill-outline-color": "rgba(3,3,3,50)",
-      "fill-opacity": 0.3,
-      "fill-color": "rgba(255,255,255,0)"
+      // "fill-opacity": 1,
+      "fill-color": [
+        "rgb",
+        255,
+        255,
+        255
+      ],
+      "fill-opacity": [
+        "case",
+        ["boolean", ["feature-state", "hover"], false],
+        0.5,
+        1
+      ]
     },
   }, labelLayerId);
   // var me = this;
+  map.VRApp.hoveredStateId = null;
+  map.on("mousemove", provinceid, function (e) {
+    if (e.features.length > 0) {
+      if (map.VRApp.hoveredStateId) {
+        map.setFeatureState(
+          { source: resourceid, id: map.VRApp.hoveredStateId },
+          { hover: false }
+        );
+      }
+      map.VRApp.hoveredStateId = e.features[0].id;
+      map.setFeatureState(
+        { source: resourceid, id: map.VRApp.hoveredStateId },
+        { hover: true }
+      );
+    }
+
+  });
+
+  map.on("mouseleave", provinceid, function (e) {
+
+    if (map.VRApp.hoveredStateId) {
+      map.setFeatureState(
+        { source: resourceid, id: map.VRApp.hoveredStateId },
+        { hover: false }
+      );
+    }
+    map.VRApp.hoveredStateId = null;
+
+  });
+
   map.on("click", provinceid, (e) => {
+
     if (e.features.length < 1) {
       return
     };
@@ -221,6 +305,7 @@ function addGeojsonLayer(map, json, level) {
 
     map.VRApp.setState({ featuredata: featureinfo, tableshow: true });
 
+    // map.setPaintProperty(provinceid, "fill-outline-color", "cyan");
     function getGeoJsonBound(e) {
       // get feature bounds
       let coordinates = e.features[0].geometry.coordinates;
@@ -252,7 +337,7 @@ function addGeojsonLayer(map, json, level) {
         let maxLat = Math.max(cur[0][1], cur[1][1], bound[0][1], bound[1][1]);
         return [[minLng, minLat], [maxLng, maxLat]]
       })
-
+      debugger;
       return bound
 
     }
@@ -260,49 +345,133 @@ function addGeojsonLayer(map, json, level) {
     // console.log(bound);
 
 
-    map.fitBounds(getGeoJsonBound(e));
+    let bound = turf.bbox(e.features[0]);
+
+    map.fitBounds(bound);
+    let selData = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {},
+          geometry: e.features[0].geometry
+        }
+      ]
+    }
+    if (map.getSource("selectedFeature")) {
+      map.getSource("selectedFeature").setData(selData);
+    }
 
   })
 
 }
+
+function updateProvinceLayer(map,json) {
+  let themedata = json ? json : {
+    "河南": 200,
+    "河北": 100,
+    "山西": 150,
+    "广东": 200
+  };
+
+  try {
+
+    debugger;
+    const maxValue = Math.max(...Object.values(themedata));
+
+    let data = Object.assign({}, provincedata);
+    data.features.map((feature) => {
+
+      Object.keys(themedata).map((key) => {
+        if (feature.properties.name.indexOf(key) != -1) {
+          debugger;
+          feature.properties.value = themedata[key];
+          feature.properties.valueColor = Math.ceil((themedata[key] / maxValue) * 255) ;
+          }
+        })
+
+      })
+
+    const resourceid = "province";
+    const provinceid = "province";
+    // addGeojsonLayer(map,data,"provinceTheme")
+
+    let paintProperty = map.getPaintProperty(provinceid,"fill-color");
+   
+    map.setPaintProperty(provinceid,"fill-color",[
+      "rgb",
+     ["case",["has","valueColor"],["get","valueColor"],255],
+     ["case",["has","valueColor"],20,255],
+     ["case",["has","valueColor"],20,255]
+    ])
+
+    map.getSource(resourceid).setData(data);
+
+    // map.setPaintProperty(provinceid,"fill-opacity",1)
+    
+
+  } catch (error) {
+    alert("not find resouce of province")
+  }
+}
 //add province layer 
 function addProvince(map) {
   addGeojsonLayer(map);
-  addGeojsonLayer(map, guangdong, 'guangdong');
-
-
+  // addGeojsonLayer(map, guangdong, "guangdong");
 
 }
 
 function addHexagonLayer(map) {
-  map.addLayer(hexagonLayer, 'waterway-label')
+  if (map.VRApp.HexagonLayer) {
+    map.removeLayer("heatmap")
+    map.VRApp.HexagonLayer = false;
+    return
+  }
+  map.VRApp.HexagonLayer = true;
+
+  map.addLayer(hexagonLayer(), "waterway-label")
   map.flyTo({
     center: [-2.67, 52.74]
   });
   // debugger;
 
-  updateMapTitle(map, '英国交通事故地图')
+  updateMapTitle(map, "英国交通事故地图")
 }
 
 function addEaseLayer(map) {
-  map.addLayer(arcsLayer, 'waterway-label');
-  map.addLayer(myDeckLayer, 'waterway-label');
+  if (map.VRApp.easeLayer) {
+    map.removeLayer("scatterplotLayer")
+    debugger;
+    map.removeLayer("arcs")
+    map.VRApp.easeLayer = false;
+    return
+  }
+  map.VRApp.easeLayer = true;
+
+  map.addLayer(arcsLayer(), "waterway-label");
+  map.addLayer(myDeckLayer(), "waterway-label");
 
   map.flyTo({
     center: [-92.67, 35.74]
   });
-  updateMapTitle(map, '美国居民迁徙地图')
+  updateMapTitle(map, "美国居民迁徙地图")
 }
 
 function ODFly(map) {
-  updateMapTitle(map, '全国航班飞行地图')
+  updateMapTitle(map, "全国航班飞行地图")
 
   //Math.ceil(Math.random()*15);   
   //center:【120，30】
-  let center = [121.81, 31.152]
   let ODs = [];
-  for (let i = 0; i < 100; i++) {
+
+  let center = [121.81, 31.152]
+  for (let i = 0; i < 50; i++) {
     ODs.push([[center[0], center[1]], [center[0] - Math.ceil(Math.random() * 20), center[1] + Math.ceil(Math.random() * 20)]])
+  }
+
+  let center1 = [109.81, 23.152]
+  for (let i = 0; i < 50; i++) {
+    ODs.push([[center1[0] + Math.ceil(Math.random() * 5), center1[1] + Math.ceil(Math.random() * 25)], [center1[0], center1[1]]])
   }
 
 
@@ -326,7 +495,7 @@ function ODFly(map) {
     // remove layers
     // var layers = map.getStyle().layers;
 
-    // var flys = layers.filter((lay) => lay.id.indexOf('fly') == 0)
+    // var flys = layers.filter((lay) => lay.id.indexOf("fly") == 0)
 
     // flys.map((layer) => map.removeLayer(layer));
     map.removeLayer(routeLayerId);
@@ -335,7 +504,7 @@ function ODFly(map) {
     map.removeSource(pointSource)
     // var sources = map.getStyle().sources;
     // // Object.keys(sources)
-    // var srcs = Object.keys(sources).filter((src) => src.indexOf('fly') == 0)
+    // var srcs = Object.keys(sources).filter((src) => src.indexOf("fly") == 0)
 
     // srcs.map((src) => map.removeSource(src));
     app.flied = false;
@@ -351,13 +520,13 @@ function ODFly(map) {
 
   // A simple line from origin to destination.
   var route = {
-    'type': 'FeatureCollection',
-    'features': [
+    "type": "FeatureCollection",
+    "features": [
       // {
-      //   'type': 'Feature',
-      //   'geometry': {
-      //     'type': 'LineString',
-      //     'coordinates': [origin, destination]
+      //   "type": "Feature",
+      //   "geometry": {
+      //     "type": "LineString",
+      //     "coordinates": [origin, destination]
       //   }
       // }
     ]
@@ -366,9 +535,9 @@ function ODFly(map) {
   var featureLine = function (coord1, coord2) {
     return {
       "type": "Feature",
-      'geometry': {
-        'type': 'LineString',
-        'coordinates': [coord1, coord2]
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [coord1, coord2]
       }
     }
   }
@@ -399,43 +568,43 @@ function ODFly(map) {
   // A single point that animates along the route.
   // Coordinates are initially set to origin.
   var point = {
-    'type': 'FeatureCollection',
-    'features': [
+    "type": "FeatureCollection",
+    "features": [
       // {
-      //   'type': 'Feature',
-      //   'properties': {},
-      //   'geometry': {
-      //     'type': 'Point',
-      //     'coordinates': origin
+      //   "type": "Feature",
+      //   "properties": {},
+      //   "geometry": {
+      //     "type": "Point",
+      //     "coordinates": origin
       //   }
       // }
     ]
   };
   var step = 100;
-  let stepDistance = 4;
+  let stepDistance = 2;
   // point.features.pop();
   function _updateroute() {
     // var distances = [],arcs = [];
     route.features.map((feature) => {
-      let distance = turf.lineDistance(feature, 'kilometers');
+      let distance = turf.lineDistance(feature, "kilometers");
       // distances.push(distance);
       let arc = [];
       // const step = 500;
       // let stepDistance = distance / step;
 
       for (let i = 0; i < distance; i += stepDistance) {
-        let segment = turf.along(feature, i, 'kilometers');
+        let segment = turf.along(feature, i, "kilometers");
         arc.push(segment.geometry.coordinates);
       }
       // arcs.push(arc);
       feature.geometry.coordinates = arc;
       //update point ,add each line start point to point
       point.features.push({
-        'type': 'Feature',
-        'properties': {},
+        "type": "Feature",
+        "properties": {},
         "geometry": {
-          'type': 'Point',
-          'coordinates': arc[0]
+          "type": "Point",
+          "coordinates": arc[0]
         }
       });
 
@@ -445,66 +614,67 @@ function ODFly(map) {
 
   _updateroute();
   // // Calculate the distance in kilometers between route start/end point.
-  // var lineDistance = turf.lineDistance(route.features[0], 'kilometers');
+  // var lineDistance = turf.lineDistance(route.features[0], "kilometers");
 
-  // var arc = [];
-
-  // // Number of steps to use in the arc and animation, more steps means
-  // // a smoother arc and animation, but too many steps will result in a
-  // // low frame rate
-  // var steps = 500;
-
-  // // Draw an arc between the `origin` & `destination` of the two points
-  // for (var i = 0; i < lineDistance; i += lineDistance / steps) {
-  //   var segment = turf.along(route.features[0], i, 'kilometers');
-  //   arc.push(segment.geometry.coordinates);
-  // }
-
-  // // Update the route with calculated arc coordinates
-  // route.features[0].geometry.coordinates = arc;
-
-  // // Used to increment the value of the point measurement against the route.
-  // let routeSource = "flyRoute" ;
-  // // let routeSource = "fly" + (Math.random() + Date.now()).toString();
-  // let pointSource = "flyPoint" ;
-  // // let pointSource = "fly" + (Math.random() + Date.now()).toString();
-  // let routeLayerId = routeSource + "Layer";
-  // let pointLayerId = pointSource + "Layer";
 
 
   map.addSource(routeSource, {
-    'type': 'geojson',
-    'data': initRoute
+    "type": "geojson",
+    lineMetrics: true,
+    "data": initRoute
   });
 
 
 
   map.addSource(pointSource, {
-    'type': 'geojson',
-    'data': point
+    "type": "geojson",
+    "data": point
   });
 
   map.addLayer({
-    'id': routeLayerId,
-    'source': routeSource,
-    'type': 'line',
-    'paint': {
-      'line-width': 1.5,
-      'line-color': 'rgba(160, 32, 240, 1)',
-      'line-blur': 1
+    "id": routeLayerId,
+    "source": routeSource,
+    "type": "line",
+    "paint": {
+      "line-width": 1,
+      // "line-color": "yellow",
+      "line-color": "yellow",
+      "line-opacity": 0.3
+      // "line-blur": 1,
+      // "line-gradient": [
+      //   "interpolate",
+      //   ["linear"],
+      //   ["line-progress"],
+      //   0,
+
+      //   "cyan",
+
+      //   0.7,
+      //   "yellow",
+      //   1,
+      //   "red"
+      // ]
+    },
+    layout: {
+      "line-cap": "round",
+      "line-join": "round"
     }
   });
+  const pulsingDot = _FlyingTraceIcon(50);
 
+  map.addImage("fly-dot", pulsingDot, { pixelRatio: 1 });
+  // const icon = _PulsingPointControl(200);
   map.addLayer({
-    'id': pointLayerId,
-    'source': pointSource,
-    'type': 'symbol',
-    'layout': {
-      'icon-image': 'airport-15',
-      'icon-rotate': ['get', 'bearing'],
-      'icon-rotation-alignment': 'map',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true
+    "id": pointLayerId,
+    "source": pointSource,
+    "type": "symbol",
+    "layout": {
+      // "icon-image": "airport-15",
+      "icon-image": "fly-dot",
+      "icon-rotate": ["get", "bearing"],
+      "icon-rotation-alignment": "map",
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true
     }
   });
 
@@ -514,8 +684,8 @@ function ODFly(map) {
   var counter = 0;
   var moveHandlerId;
   function animate(t) {
-    console.log(counter)
-    // console.log(t,'time');
+    // console.log(counter)
+    // console.log(t,"time");
 
     if (counter > maxNum) {
       cancelAnimationFrame(app.moveHandlerId);
@@ -551,17 +721,20 @@ function ODFly(map) {
 }
 
 function addHotLayer(map) {
+  // var points = randomPoint(25, {bbox: [-180, -90, 180, 90]})
   let app = map.VRApp;
   if (app.hotLayer) {
 
     removeEarthquake();
+    map.removeLayer("earthquack-tin");
+    map.removeSource("tin")
     updateMapTitle(map, "")
     app.hotLayer = false;
 
   } else {
     earthquakes();
 
-    updateMapTitle(map, '地震热力地图')
+    updateMapTitle(map, "地震热力地图")
     app.hotLayer = true;
   }
   function earthquakes() {
@@ -574,18 +747,36 @@ function addHotLayer(map) {
       // clusterRadius: 50 
     });
 
+    const tin = turf.tin(earthquakedata, "mag");
+    map.addSource("tin", {
+      type: "geojson",
+      data: tin
+    })
 
     map.addLayer({
-      'id': 'earthquakes-heat',
-      'type': 'heatmap',
-      'source': 'earthquakes',
-      'maxzoom': 9,
-      'paint': {
+      id: "earthquack-tin",
+      type: "fill",
+      source: "tin",
+      paint: {
+        "fill-color": "rgba(0,0,0,0)",
+        "fill-opacity": 1,
+        "fill-outline-color": "gray"
+      }
+    })
+
+    debugger;
+
+    map.addLayer({
+      "id": "earthquakes-heat",
+      "type": "heatmap",
+      "source": "earthquakes",
+      "maxzoom": 9,
+      "paint": {
         // Increase the heatmap weight based on frequency and property magnitude
-        'heatmap-weight': [
-          'interpolate',
-          ['linear'],
-          ['get', 'mag'],
+        "heatmap-weight": [
+          "interpolate",
+          ["linear"],
+          ["get", "mag"],
           0,
           0,
           6,
@@ -593,10 +784,10 @@ function addHotLayer(map) {
         ],
         // Increase the heatmap color weight weight by zoom level
         // heatmap-intensity is a multiplier on top of heatmap-weight
-        'heatmap-intensity': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
+        "heatmap-intensity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
           0,
           1,
           9,
@@ -605,38 +796,38 @@ function addHotLayer(map) {
         // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
         // Begin color ramp at 0-stop with a 0-transparancy color
         // to create a blur-like effect.
-        'heatmap-color': [
-          'interpolate',
-          ['linear'],
-          ['heatmap-density'],
+        "heatmap-color": [
+          "interpolate",
+          ["linear"],
+          ["heatmap-density"],
           0,
-          'rgba(33,102,172,0)',
+          "rgba(33,102,172,0)",
           0.2,
-          'rgb(103,169,207)',
+          "rgb(103,169,207)",
           0.4,
-          'rgb(209,229,240)',
+          "rgb(209,229,240)",
           0.6,
-          'rgb(253,219,199)',
+          "rgb(253,219,199)",
           0.8,
-          'rgb(239,138,98)',
+          "rgb(239,138,98)",
           1,
-          'rgb(178,24,43)'
+          "rgb(178,24,43)"
         ],
         // Adjust the heatmap radius by zoom level
-        'heatmap-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
+        "heatmap-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
           0,
           2,
           9,
           20
         ],
         // Transition from heatmap to circle layer by zoom level
-        'heatmap-opacity': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
+        "heatmap-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
           7,
           1,
           9,
@@ -644,60 +835,60 @@ function addHotLayer(map) {
         ]
       }
     },
-      'waterway-label');
+      "waterway-label");
     let pulsingDot = new _PulsingPointControl();
-    map.addImage('pulsing-dot', pulsingDot, { pixelRatio: 2 });
+    map.addImage("pulsing-dot", pulsingDot, { pixelRatio: 2 });
     map.addLayer({
       id: "earthIcon",
       type: "symbol",
-      source: 'earthquakes',
+      source: "earthquakes",
       layout: {
-        'icon-image': 'pulsing-dot'
+        "icon-image": "pulsing-dot"
       },
     });
 
     map.addLayer(
       {
-        'id': 'earthquakes-point',
-        'type': 'circle',
-        'source': 'earthquakes',
-        'minzoom': 7,
-        'paint': {
+        "id": "earthquakes-point",
+        "type": "circle",
+        "source": "earthquakes",
+        "minzoom": 7,
+        "paint": {
           // Size circle radius by earthquake magnitude and zoom level
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
             7,
-            ['interpolate', ['linear'], ['get', 'mag'], 1, 1, 6, 4],
+            ["interpolate", ["linear"], ["get", "mag"], 1, 1, 6, 4],
             16,
-            ['interpolate', ['linear'], ['get', 'mag'], 1, 5, 6, 50]
+            ["interpolate", ["linear"], ["get", "mag"], 1, 5, 6, 50]
           ],
           // Color circle by earthquake magnitude
-          'circle-color': [
-            'interpolate',
-            ['linear'],
-            ['get', 'mag'],
+          "circle-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "mag"],
             1,
-            'rgba(33,102,172,0)',
+            "rgba(33,102,172,0)",
             2,
-            'rgb(103,169,207)',
+            "rgb(103,169,207)",
             3,
-            'rgb(209,229,240)',
+            "rgb(209,229,240)",
             4,
-            'rgb(253,219,199)',
+            "rgb(253,219,199)",
             5,
-            'rgb(239,138,98)',
+            "rgb(239,138,98)",
             6,
-            'rgb(178,24,43)'
+            "rgb(178,24,43)"
           ],
-          'circle-stroke-color': 'white',
-          'circle-stroke-width': 1,
+          "circle-stroke-color": "white",
+          "circle-stroke-width": 1,
           // Transition from heatmap to circle layer by zoom level
-          'circle-opacity': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
+          "circle-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
             7,
             0,
             8,
@@ -705,14 +896,14 @@ function addHotLayer(map) {
           ]
         }
       },
-      'waterway-label'
+      "waterway-label"
     );
   }
   function removeEarthquake() {
 
 
     if (map.getLayer("earthquakes-point") && map.getLayer("earthquakes-heat")) {
-      map.removeLayer('earthquakes-point')
+      map.removeLayer("earthquakes-point")
       map.removeLayer("earthquakes-heat");
       map.removeLayer("earthIcon")
 
@@ -728,133 +919,150 @@ function addHotLayer(map) {
 
 
 function addCluster(map) {
-  let earthquakes = 'earthquakesCluster'
-  if (!map.getSource(earthquakes)) {
-    map.addSource(earthquakes, {
-      type: 'geojson',
-      // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
-      // from 12/22/15 to 1/21/16 as logged by USGS' Earthquake hazards program.
-      data: earthquakedata,
-      cluster: true,
-      clusterMaxZoom: 14, // Max zoom to cluster points on
-      clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+  let earthquakes = "earthquakesCluster";
+
+  let app = map.VRApp;
+  if (app.ClusterLayer) {
+    map.removeLayer("clusters");
+    map.removeLayer("cluster-count");
+    map.removeLayer("unclustered-point");
+    map.removeSource(earthquakes)
+    app.ClusterLayer = false;
+    updateMapTitle(map, "中国地图");
+  } else {
+    app.ClusterLayer = true;
+    updateMapTitle(map, "世界地震据类分布地图");
+
+    if (!map.getSource(earthquakes)) {
+      map.addSource(earthquakes, {
+        type: "geojson",
+        // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
+        // from 12/22/15 to 1/21/16 as logged by USGS" Earthquake hazards program.
+        data: earthquakedata,
+        cluster: true,
+        clusterMaxZoom: 14, // Max zoom to cluster points on
+        clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+      });
+    }
+
+    map.addLayer({
+      id: "clusters",
+      type: "circle",
+      source: earthquakes,
+      filter: ["has", "point_count"],
+      paint: {
+        // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
+        // with three steps to implement three types of circles:
+        //   * Blue, 20px circles when point count is less than 100
+        //   * Yellow, 30px circles when point count is between 100 and 750
+        //   * Pink, 40px circles when point count is greater than or equal to 750
+        "circle-color": [
+          "step",
+          ["get", "point_count"],
+          "#51bbd6",
+          100,
+          "#f1f075",
+          750,
+          "#f28cb1"
+        ],
+        "circle-radius": [
+          "step",
+          ["get", "point_count"],
+          20,
+          100,
+          30,
+          750,
+          40
+        ]
+      }
+    });
+
+    map.addLayer({
+      id: "cluster-count",
+      type: "symbol",
+      source: earthquakes,
+      filter: ["has", "point_count"],
+      layout: {
+        "text-field": "{point_count_abbreviated}",
+        "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+        "text-size": 12
+      }
+    });
+
+
+    map.addLayer({
+      id: "unclustered-point",
+      type: "circle",
+      source: earthquakes,
+      filter: ["!", ["has", "point_count"]],
+
+      paint: {
+        "circle-color": "lightblue",
+        "circle-radius": 4,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
+      }
+    });
+
+    // inspect a cluster on click
+    map.on("click", "clusters", function (e) {
+      var features = map.queryRenderedFeatures(e.point, {
+        layers: ["clusters"]
+      });
+      var clusterId = features[0].properties.cluster_id;
+      map.getSource(earthquakes).getClusterExpansionZoom(
+        clusterId,
+        function (err, zoom) {
+          if (err) return;
+
+          map.easeTo({
+            center: features[0].geometry.coordinates,
+            zoom: zoom
+          });
+        }
+      );
+    });
+
+    // When a click event occurs on a feature in
+    // the unclustered-point layer, open a popup at
+    // the location of the feature, with
+    // description HTML from its properties.
+    map.on("click", "unclustered-point", function (e) {
+      var coordinates = e.features[0].geometry.coordinates.slice();
+      var mag = e.features[0].properties.mag;
+      var tsunami;
+
+      if (e.features[0].properties.tsunami === 1) {
+        tsunami = "yes";
+      } else {
+        tsunami = "no";
+      }
+
+      // Ensure that if the map is zoomed out such that
+      // multiple copies of the feature are visible, the
+      // popup appears over the copy being pointed to.
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      new Popup()
+        .setLngLat(coordinates)
+        .setHTML(
+          "magnitude: " + mag + "<br>Was there a tsunami?: " + tsunami
+        )
+        .addTo(map);
+    });
+
+    map.on("mouseenter", "clusters", function () {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "clusters", function () {
+      map.getCanvas().style.cursor = "";
     });
   }
 
 
-  map.addLayer({
-    id: 'clusters',
-    type: 'circle',
-    source: earthquakes,
-    filter: ['has', 'point_count'],
-    paint: {
-      // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
-      // with three steps to implement three types of circles:
-      //   * Blue, 20px circles when point count is less than 100
-      //   * Yellow, 30px circles when point count is between 100 and 750
-      //   * Pink, 40px circles when point count is greater than or equal to 750
-      'circle-color': [
-        'step',
-        ['get', 'point_count'],
-        '#51bbd6',
-        100,
-        '#f1f075',
-        750,
-        '#f28cb1'
-      ],
-      'circle-radius': [
-        'step',
-        ['get', 'point_count'],
-        20,
-        100,
-        30,
-        750,
-        40
-      ]
-    }
-  });
 
-  map.addLayer({
-    id: 'cluster-count',
-    type: 'symbol',
-    source: earthquakes,
-    filter: ['has', 'point_count'],
-    layout: {
-      'text-field': '{point_count_abbreviated}',
-      'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-      'text-size': 12
-    }
-  });
-
-  map.addLayer({
-    id: 'unclustered-point',
-    type: 'symble',
-    source: earthquakes,
-    filter: ['!', ['has', 'point_count']],
-
-    paint: {
-      'circle-color': '#11b4da',
-      'circle-radius': 4,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': '#fff'
-    }
-  });
-
-  // inspect a cluster on click
-  map.on('click', 'clusters', function (e) {
-    var features = map.queryRenderedFeatures(e.point, {
-      layers: ['clusters']
-    });
-    var clusterId = features[0].properties.cluster_id;
-    map.getSource(earthquakes).getClusterExpansionZoom(
-      clusterId,
-      function (err, zoom) {
-        if (err) return;
-
-        map.easeTo({
-          center: features[0].geometry.coordinates,
-          zoom: zoom
-        });
-      }
-    );
-  });
-
-  // When a click event occurs on a feature in
-  // the unclustered-point layer, open a popup at
-  // the location of the feature, with
-  // description HTML from its properties.
-  map.on('click', 'unclustered-point', function (e) {
-    var coordinates = e.features[0].geometry.coordinates.slice();
-    var mag = e.features[0].properties.mag;
-    var tsunami;
-
-    if (e.features[0].properties.tsunami === 1) {
-      tsunami = 'yes';
-    } else {
-      tsunami = 'no';
-    }
-
-    // Ensure that if the map is zoomed out such that
-    // multiple copies of the feature are visible, the
-    // popup appears over the copy being pointed to.
-    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-    }
-
-    new Popup()
-      .setLngLat(coordinates)
-      .setHTML(
-        'magnitude: ' + mag + '<br>Was there a tsunami?: ' + tsunami
-      )
-      .addTo(map);
-  });
-
-  map.on('mouseenter', 'clusters', function () {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', 'clusters', function () {
-    map.getCanvas().style.cursor = '';
-  });
 }
 
 function updateMapTitle(map, newtitle) {
@@ -863,8 +1071,8 @@ function updateMapTitle(map, newtitle) {
   })
 }
 
-function _PulsingPointControl() {
-  var size = 200;
+function _FlyingTraceIcon(size) {
+  var size = size ? size : 200;
 
   // implementation of CustomLayerInterface to draw a pulsing dot icon on the map
   // see https://docs.mapbox.com/mapbox-gl-js/api/#customlayerinterface for more info
@@ -876,10 +1084,84 @@ function _PulsingPointControl() {
     // get rendering context for the map canvas when layer is added to the map
     onAdd: function (map) {
       this._map = map;
-      var canvas = document.createElement('canvas');
+      var canvas = document.createElement("canvas");
       canvas.width = this.width;
       canvas.height = this.height;
-      this.context = canvas.getContext('2d');
+      this.context = canvas.getContext("2d");
+    },
+
+    // called once before every frame where the icon will be used
+    render: function () {
+      var duration = 1000;
+      var t = (performance.now() % duration) / duration;
+      var radius = (size / 2) * 0.3;
+      var context = this.context;
+
+      context.clearRect(0, 0, this.width, this.height);
+
+      context.beginPath();
+      context.arc(
+        this.width / 2,
+        this.height / 2,
+        1.5,
+        0,
+        Math.PI * 2
+      );
+      context.strokeStyle = "rgba(255, 255,0,1)";
+      // context.fill();
+      context.stroke();
+
+
+      context.beginPath(); //新建一条path
+      let grd = context.createLinearGradient(0, 0, 0, this.width);//创建一个渐变色
+      grd.addColorStop(0, "yellow");
+      grd.addColorStop(1, "rgba(255,255,0,0.1)");
+      context.strokeStyle = grd;
+      //context.lineWidth = 2;
+
+      context.moveTo(this.width / 2, this.height / 2); //把画笔移动到指定的坐标
+      context.lineTo(this.width / 2, this.width);  //绘制一条从当前位置到指定坐标(200, 50)的直线.
+      //闭合路径。会拉一条从当前点到path起始点的直线。如果当前点与起始点重合，则什么都不做
+      context.closePath();
+      context.stroke(); //绘制路径。
+
+
+      // update this image"s data with data from the canvas
+      this.data = context.getImageData(
+        0,
+        0,
+        this.width,
+        this.height
+      ).data;
+
+      // continuously repaint the map, resulting in the smooth animation of the dot
+      this._map.triggerRepaint();
+
+      // return `true` to let the map know that the image was updated
+      return true;
+    }
+  };
+
+  return pulsingDot;
+}
+
+function _PulsingPointControl(size) {
+  var size = size ? size : 200;
+
+  // implementation of CustomLayerInterface to draw a pulsing dot icon on the map
+  // see https://docs.mapbox.com/mapbox-gl-js/api/#customlayerinterface for more info
+  var pulsingDot = {
+    width: size,
+    height: size,
+    data: new Uint8Array(size * size * 4),
+
+    // get rendering context for the map canvas when layer is added to the map
+    onAdd: function (map) {
+      this._map = map;
+      var canvas = document.createElement("canvas");
+      canvas.width = this.width;
+      canvas.height = this.height;
+      this.context = canvas.getContext("2d");
     },
 
     // called once before every frame where the icon will be used
@@ -901,7 +1183,7 @@ function _PulsingPointControl() {
         0,
         Math.PI * 2
       );
-      context.fillStyle = 'rgba(255, 200, 200,' + (1 - t) + ')';
+      context.fillStyle = "rgba(255, 200, 200," + (1 - t) + ")";
       context.fill();
 
       // draw inner circle
@@ -913,13 +1195,27 @@ function _PulsingPointControl() {
         0,
         Math.PI * 2
       );
-      context.fillStyle = 'rgba(255, 100, 100, 1)';
-      context.strokeStyle = 'white';
+      context.fillStyle = "rgba(255, 100, 100, 1)";
+      context.strokeStyle = "white";
       context.lineWidth = 2 + 4 * (1 - t);
       context.fill();
       context.stroke();
 
-      // update this image's data with data from the canvas
+      // context.beginPath(); //新建一条path
+      // var grd = context.createLinearGradient(0, 0, 10,0);
+      // grd.addColorStop(0, "white");
+      // grd.addColorStop(1, "yellow");
+      // context.strokeStyle = grd;
+      // context.lineWidth = 1 + 2 * (1 - t);
+
+      // context.moveTo(this.width / 2, this.height / 2); //把画笔移动到指定的坐标
+      // context.lineTo(this.width/2,0);  //绘制一条从当前位置到指定坐标(200, 50)的直线.
+      // //闭合路径。会拉一条从当前点到path起始点的直线。如果当前点与起始点重合，则什么都不做
+      // context.closePath();
+      // context.stroke(); //绘制路径。
+
+
+      // update this image"s data with data from the canvas
       this.data = context.getImageData(
         0,
         0,
@@ -940,7 +1236,7 @@ function _PulsingPointControl() {
 
 function overView(map) {
   let app = map.VRApp;
-  let style = 'mapbox://styles/mapbox/light-v10'
+  let style = "mapbox://styles/mapbox/light-v10"
   if (app.overview) {
     map.removeControl(app.overview);
     app.overview = undefined;
@@ -951,7 +1247,7 @@ function overView(map) {
       zoom: 2,
       style: style,
     });
-    map.addControl(app.overview, 'bottom-left');
+    map.addControl(app.overview, "bottom-left");
 
   }
 
@@ -966,16 +1262,16 @@ function addRenderDem(map) {
   })
 
   map.addLayer({
-    'id': "dem",
+    "id": "dem",
     "source": "dems",
-    'type': 'hillshade',
-    'paint': {
-      'hillshade-highlight-color': '#0dcae3',
-      'hillshade-accent-color': '#0dcae3',
-      'hillshade-shadow-color': 'black',
-      'hillshade-illumination-direction': 90,
-      'hillshade-exaggeration': 0.56,
-      'hillshade-illumination-anchor': 'map'
+    "type": "hillshade",
+    "paint": {
+      "hillshade-highlight-color": "#0dcae3",
+      "hillshade-accent-color": "#0dcae3",
+      "hillshade-shadow-color": "black",
+      "hillshade-illumination-direction": 90,
+      "hillshade-exaggeration": 0.56,
+      "hillshade-illumination-anchor": "map"
     }
 
   })
@@ -983,7 +1279,77 @@ function addRenderDem(map) {
 
 function addTripLayer(map) {
   debugger;
-  map.addLayer(tripLayer, 'waterway-label');
+  map.addLayer(tripLayer, "waterway-label");
+}
+
+function _updateTable(geojson) {
+  if (geojson.features.length < 1) {
+    return
+  };
+  const app = geojson.target.VRApp;
+  let properties = geojson.features[0].properties;
+  //图层过滤器
+  //map.setFilter(provinceid,["in","SHENG_ID",properties.SHENG_ID])
+
+  let featureinfo = [];
+  Object.keys(properties).map((key) => {
+    let data = {};
+    data["字段"] = key;
+    data["值"] = properties[key];
+    featureinfo.push(data);
+  });
+
+  app.setState({ featuredata: featureinfo, tableshow: true });
+}
+
+// React.lazy()
+function addIndoorLayer(map) {
+  const sourceid = "indoordata";
+  let app = map.VRApp;
+  if (app.indoorLayer) {
+    map.removeLayer(sourceid).removeSource(sourceid);
+    app.indoorLayer = false;
+    updateMapTitle(map, "地图")
+
+    return
+  }
+  updateMapTitle(map, "室内地图")
+  app.indoorLayer = true;
+  if (!map.getSource(sourceid)) {
+    map.addSource(sourceid, {
+      type: "geojson",
+      data: indoorData
+    });
+  }
+
+  if (!map.getLayer(sourceid)) {
+    map.addLayer({
+      "id": sourceid,
+      "type": "fill-extrusion",
+      "source": sourceid,
+      "paint": {
+        // See the Mapbox Style Specification for details on data expressions.
+        // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions
+
+        // Get the fill-extrusion-color from the source "color" property.
+        "fill-extrusion-color": ["get", "color"],
+
+        // Get fill-extrusion-height from the source "height" property.
+        "fill-extrusion-height": ["get", "height"],
+
+        // Get fill-extrusion-base from the source "base_height" property.
+        "fill-extrusion-base": ["get", "base_height"],
+
+        // Make extrusions slightly opaque for see through indoor walls.
+        "fill-extrusion-opacity": 0.5
+      }
+    })
+  }
+
+  const bound = turf.bbox(indoorData);
+  map.fitBounds(bound)
+
+  map.on("click", sourceid, _updateTable)
 }
 
 export default {
@@ -998,4 +1364,6 @@ export default {
   overView,
   addRenderDem,
   addTripLayer,
+  addIndoorLayer,
+  updateProvinceLayer,
 };

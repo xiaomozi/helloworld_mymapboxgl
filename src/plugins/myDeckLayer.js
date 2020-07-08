@@ -109,17 +109,19 @@ function loadData(data) {
 }
 
 
-const myDeckLayer = new MapboxLayer({
-    type: ScatterplotLayer,
-    id: 'counties',
-    data: loadData(coutries)[0],
-    opacity: 0.5,
-    pickable: true,
-    // onHover: this._onHover,
-    getRadius: d => RADIUS_SCALE(d.total) * 3,
-    getColor: d => (d.net > 0 ? TARGET_COLOR : SOURCE_COLOR)
-
-});
+export default function myDeckLayer(){
+    return new MapboxLayer({
+        type: ScatterplotLayer,
+        id: 'scatterplotLayer',
+        data: loadData(coutries)[0],
+        opacity: 0.5,
+        pickable: true,
+        // onHover: this._onHover,
+        getRadius: d => RADIUS_SCALE(d.total) * 3,
+        getColor: d => (d.net > 0 ? TARGET_COLOR : SOURCE_COLOR)
+    
+    });
+}
 
 export const tripLayer = new MapboxLayer({
     type:TripsLayer,
@@ -168,28 +170,30 @@ export const tripLayer = new MapboxLayer({
     });
 }
 
-export const arcsLayer = new MapboxLayer({
-    type: ArcLayer,
-    id: 'arcs',
-    data: loadData(coutries)[1],
-    // brushRadius: 100000,
-    getStrokeWidth: d => WIDTH_SCALE(d.value),
-    opacity: 1,
-    pickable: true,
-    getWidth: 2,
-    getTilt:60,
-    autoHighlight:true,
-    greatCircle:false,
-    getSourcePosition: d => d.source,
-    getTargetPosition: d => d.target,
-    getSourceColor: SOURCE_COLOR,
-    getTargetColor: TARGET_COLOR
-});
+export const arcsLayer = function(){
+    return new MapboxLayer({
+        type: ArcLayer,
+        id: 'arcs',
+        data: loadData(coutries)[1],
+        // brushRadius: 100000,
+        getStrokeWidth: d => WIDTH_SCALE(d.value),
+        opacity: 1,
+        pickable: true,
+        getWidth: 2,
+        getTilt:60,
+        autoHighlight:true,
+        greatCircle:false,
+        getSourcePosition: d => d.source,
+        getTargetPosition: d => d.target,
+        getSourceColor: SOURCE_COLOR,
+        getTargetColor: TARGET_COLOR
+    });
+}
 
 
 
-const _hexagonLayer = function () {
-    const DATA_URL = '../data/heatmap-data.csv';
+export const hexagonLayer = function () {
+    // const DATA_URL = '../data/heatmap-data.csv';
     // const OPTIONS = ['radius', 'coverage', 'upperPercentile'];
     const COLOR_RANGE = [
         [1, 152, 189],
@@ -224,5 +228,5 @@ const _hexagonLayer = function () {
     })
 }
 
-export const hexagonLayer = _hexagonLayer();
-export default myDeckLayer;
+// export const hexagonLayer = _hexagonLayer();
+// export default myDeckLayer;
