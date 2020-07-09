@@ -64,35 +64,101 @@ class ThemeData extends React.Component{
   constructor(props){
     super(props)
     this.handleOnchange = this.handleOnchange.bind(this);
+    this.handleChangeChoose = this.handleChangeChoose.bind(this)
     this.state={
-      value:''
+      value:'',
+      // index:0,
+    }
+    this.style ={
+      'background-color':'honeydew',
+      'opacity':'0.8',
+      'position':'relative',
+      'float':'right',
+      'min-height':'40em',
+      'min-width':'30%',
+      'top':'7em',
+      'right':'4em'
     }
   }
 
   handleOnchange(e){
   
     const data = e.target.value;
+    if(data.trim() === "?" | data.trim() === "？"){
+      const city = ['北京','天津','河北','山西','内蒙古','辽宁',
+      '吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西',
+      '山东','河南','湖北','湖南','广东','广西','海南',
+      '四川','贵州','云南','重庆','西藏',
+      '陕西','甘肃','青海','宁夏','新疆','香港','澳门','台湾']
+      let newdata  = city.reduce((pre,cur)=>{
+        return pre + cur + ':\n'
+      },'')
+      this.setState({value:newdata})
+      return;
+    }
+
     const seperator = ':';
-    const newdata = data.replace(/(，|；|：|,|;|:)/g,seperator)
-    this.setState({value:newdata})
+    const newdata = data.replace(/(，|；|：| +|,|;|:+|\t)/g,seperator)
+    this.setState({value:newdata.toString()})
+
     let out = {};
-    newdata.split("\n").map((item)=>{
+    const row = newdata.toString();
+    
+    row.split("\n").map((item)=>{
       if(item.trim().length > 0){
         let [key,value] = item.split(seperator);
-        out[key] = parseFloat(value);
+        // let kep = item.split(seperator);
+        // let key = kep[0];
+        // let value = kvp[this.state.index];
+        out[key.trim()] =value?parseFloat(value.trim()):null;
       }
     })
     const map = this.props.map;
-    debugger;
-    Tools.updateProvinceLayer(map,out);
-    console.log(out);
-  }
+      Tools.updateProvinceLayer(map,out);
 
+       
+
+  }
+  handleChangeChoose(e){
+    debugger;
+    // this.setState({index:e.target.value})
+    let data = this.state.value;
+    let out = {};
+    const row = data.toString();
+    const seperator = ':';
+    
+    row.split("\n").map((item)=>{
+      if(item.trim().length > 0){
+        // let [key,value] = item.split(seperator);
+        // let kvp =item.split(seperator);
+        let kvp = item.split(seperator);
+        let key = kvp[0];
+        let value = kvp[e.target.value];
+        out[key.trim()] =value?parseFloat(value.trim()):null;
+      }
+    })
+    const map = this.props.map;
+      Tools.updateProvinceLayer(map,out);
+  }
   render(){
+
+    const items = [1,2,3,4,5,6,7,8,9,10];
+    const cols = items.map((item)=>{
+      return (<li  key = {item.toString()}>{item.toString()+": "}<input name='col' type="radio" value={item} onChange = {this.handleChangeChoose}/></li>)
+    })
+
     if(this.props.themeData)
-  return(<>
-        <textarea id="themedataTextarea" value={this.state.value} style={{height:500,width:500,position:"relative",top:"4em",left:"1em"}} onChange={this.handleOnchange}></textarea>
-    </>) 
+  return(<div className = 'themedatabox'>
+        <ol >
+          {cols}
+        </ol>
+        <textarea id="themedataTextarea" value={this.state.value} 
+          // style={this.style} 
+          // index = {this.state.index}
+          onChange={this.handleOnchange}>
+
+        </textarea>
+    </div>) 
     else {
       return <></>
     }
@@ -141,7 +207,7 @@ class App extends React.Component {
 
 
   componentDidMount() {
-    console.log(this, 'Did Mount')
+    // console.log(this, 'Did Mount')
 
     if (!mapboxgl.supported()) {
       alert('Your browser does not support Mapbox GL');
@@ -351,6 +417,13 @@ class App extends React.Component {
 
         // tool.addTool("trip", Tools.addTripLayer);
         tool.addTool("新", ()=>{
+          if(this.map.themeLayer){
+          me.setState({themeData:false})
+          this.map.themeLayer = false;
+
+            return
+          }
+          this.map.themeLayer = true;
           me.setState({themeData:true})
         });
 

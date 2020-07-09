@@ -13,7 +13,7 @@ import earthquakedata from "./data/earthquakes.json";
 import Minimap from "./plugins/mapboxgl-minimapControl";
 
 
-import provincedata from "./data/chinamap.json";
+import provincedata from "./data/chinamap";
 import guangdong from "./data/guangdong.json";
 
 import indoorData from "./data/indoor-3d-map.json";
@@ -366,52 +366,71 @@ function addGeojsonLayer(map, json, level) {
 
 }
 
-function updateProvinceLayer(map,json) {
-  let themedata = json ? json : {
-    "河南": 200,
-    "河北": 100,
-    "山西": 150,
-    "广东": 200
-  };
+function updateProvinceLayer(map, json) {
+  let themedata = json ? json : {};
 
   try {
 
-    debugger;
-    const maxValue = Math.max(...Object.values(themedata));
+    //{}
+    if (Object.keys(themedata).length == 0) {
 
-    let data = Object.assign({}, provincedata);
+      const resourceid = "province";
+      map.getSource(resourceid).setData(JSON.parse(JSON.stringify(provincedata)));
+
+      map.setPaintProperty(resourceid, "fill-color", [
+        "rgb",
+        255, 255, 255
+      ])
+      return
+
+    }
+    //{'dd':null}
+    if (Object.values(themedata).length == 1) {
+      if (!Object.values(themedata)[0] ) {
+        const resourceid = "province";
+        map.getSource(resourceid).setData(JSON.parse(JSON.stringify(provincedata)));
+
+        map.setPaintProperty(resourceid, "fill-color", [
+          "rgb",
+          255, 255, 255
+        ])
+        return
+      }
+    }
+
+   
+    function rescaledata(pre){
+      const maxValue = Math.max(...Object.values(themedata));
+      const minValue = Math.min(...Object.values(themedata));
+      const maxExtent = 255;
+      const minExtent = 50;
+      return Math.ceil((pre-minValue + 1) * (maxExtent-minExtent) / (maxValue + 1 - minValue) + minExtent-1);
+    }
+    let data = JSON.parse(JSON.stringify(provincedata));
     data.features.map((feature) => {
 
       Object.keys(themedata).map((key) => {
         if (feature.properties.name.indexOf(key) != -1) {
-          debugger;
           feature.properties.value = themedata[key];
-          feature.properties.valueColor = Math.ceil((themedata[key] / maxValue) * 255) ;
-          }
-        })
-
+          feature.properties.valueColor = rescaledata(themedata[key]);
+        }
       })
+
+    })
 
     const resourceid = "province";
     const provinceid = "province";
-    // addGeojsonLayer(map,data,"provinceTheme")
 
-    let paintProperty = map.getPaintProperty(provinceid,"fill-color");
-   
-    map.setPaintProperty(provinceid,"fill-color",[
+    map.setPaintProperty(provinceid, "fill-color", [
       "rgb",
-     ["case",["has","valueColor"],["get","valueColor"],255],
-     ["case",["has","valueColor"],20,255],
-     ["case",["has","valueColor"],20,255]
+      ["case", ["has", "valueColor"], ["get", "valueColor"], 255],
+      ["case", ["has", "valueColor"], 20, 255],
+      ["case", ["has", "valueColor"], 20, 255]
     ])
-
     map.getSource(resourceid).setData(data);
 
-    // map.setPaintProperty(provinceid,"fill-opacity",1)
-    
-
   } catch (error) {
-    alert("not find resouce of province")
+    alert("please add the province layer first")
   }
 }
 //add province layer 

@@ -1,4 +1,4 @@
-{
+ var map = {
     "type": "FeatureCollection",
     "features": [{
         "type": "Feature",
@@ -23648,3 +23648,5 @@
         }
     }]
 }
+
+export default map;
