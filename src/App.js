@@ -66,11 +66,14 @@ class ListItem extends React.Component {
   constructor(props){
     super(props);
     this.handleChangeChoose = this.handleChangeChoose.bind(this);
+    this.order = props.order;
     
   }
 
   handleChangeChoose(e) {
     debugger;
+    //change the colume
+
     let data = this.props.data;
     let out = {};
     const row = data.toString();
@@ -78,11 +81,10 @@ class ListItem extends React.Component {
 
     row.split("\n").map((item) => {
       if (item.trim().length > 0) {
-        // let [key,value] = item.split(seperator);
-        // let kvp =item.split(seperator);
-        let kvp = item.split(seperator);
-        let key = kvp[0];
-        let value = kvp[e.target.value];
+       
+        let kvp = item.split(seperator);//[]
+        let key = kvp[0];//the first filed --- province
+        let value = kvp[this.order];
         out[key.trim()] = value ? parseFloat(value.trim()) : null;
       }
     })
@@ -124,8 +126,8 @@ class ChooseBar extends React.Component {
 
   render() {
     let headers = this.getTitles(this.props);
-    let items = headers.map((item) =>
-      <ListItem key={item} value={item} data={this.props.value} map = {this.props.map}></ListItem>
+    let items = headers.map((item,index) =>
+      <ListItem key={item} value={item} order ={index+1} data={this.props.value} map = {this.props.map}></ListItem>
     )
 
     return (
@@ -224,17 +226,17 @@ class ThemeData extends React.Component {
 
   render() {
 
-    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const cols = items.map((item) => {
-      return (<li key={item.toString()}>{item.toString() + ": "}<input name='col' type="radio" value={item} onChange={this.handleChangeChoose} /></li>)
-    })
+    // const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    // const cols = items.map((item) => {
+    //   return (<li key={item.toString()}>{item.toString() + ": "}<input name='col' type="radio" value={item} onChange={this.handleChangeChoose} /></li>)
+    // })
 
     if (this.props.themeData)
       return (<div className='themedatabox'>
         {/* <ol >
           {cols}
         </ol> */}
-        <ChooseBar value={this.state.value} map={this.state.map}/>
+        <ChooseBar value={this.state.value} map={this.props.map}/>
         <textarea id="themedataTextarea" value={this.state.value}
           // style={this.style} 
           // index = {this.state.index}
@@ -279,7 +281,7 @@ class App extends React.Component {
 
         </div>
         <TableContainer tableshow={this.state.tableshow} featuredata={this.state.featuredata} />
-        <canvas id="deck-canvas" className="trcl"></canvas>
+        {/* <canvas id="deck-canvas" className="trcl"></canvas> */}
         <MapTitle className='mapTitle' title={this.state.mapTitle} />
 
         <ThemeData className='themedata' themeData={this.state.themeData} map={this.state.map} />
