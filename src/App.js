@@ -60,105 +60,188 @@ function TableContainer(props) {
 
 }
 
-class ThemeData extends React.Component{
+
+class ListItem extends React.Component {
+  // 正确！这里不需要指定 key：
   constructor(props){
+    super(props);
+    this.handleChangeChoose = this.handleChangeChoose.bind(this);
+    
+  }
+
+  handleChangeChoose(e) {
+    debugger;
+    let data = this.props.data;
+    let out = {};
+    const row = data.toString();
+    const seperator = ':';
+
+    row.split("\n").map((item) => {
+      if (item.trim().length > 0) {
+        // let [key,value] = item.split(seperator);
+        // let kvp =item.split(seperator);
+        let kvp = item.split(seperator);
+        let key = kvp[0];
+        let value = kvp[e.target.value];
+        out[key.trim()] = value ? parseFloat(value.trim()) : null;
+      }
+    })
+    const map = this.props.map;
+    Tools.updateProvinceLayer(map, out);
+  }
+
+  render() {
+    return <li>
+      {this.props.value}<input type='radio' value={this.props.value} name='col' onChange={this.handleChangeChoose} />
+    </li>;
+  }
+
+}
+
+
+class ChooseBar extends React.Component {
+  constructor(props) {
+    super(props);
+    this.getTitles = this.getTitles.bind(this);
+
+
+  }
+
+  getTitles(props) {
+    let data = props.value;
+    let out = {};
+    const row = data.toString();
+    const seperator = ':';
+    const header = row.split('\n')[0];
+    debugger;
+    if (header.trim().length > 0) {
+
+      return header.split(seperator).slice(1);
+
+    }
+    return []
+  }
+
+  render() {
+    let headers = this.getTitles(this.props);
+    let items = headers.map((item) =>
+      <ListItem key={item} value={item} data={this.props.value} map = {this.props.map}></ListItem>
+    )
+
+    return (
+      <ol>
+        {items}
+      </ol>
+    )
+
+  }
+
+}
+
+class ThemeData extends React.Component {
+  constructor(props) {
     super(props)
     this.handleOnchange = this.handleOnchange.bind(this);
     this.handleChangeChoose = this.handleChangeChoose.bind(this)
-    this.state={
-      value:'',
+    this.state = {
+      value: '',
       // index:0,
     }
-    this.style ={
-      'background-color':'honeydew',
-      'opacity':'0.8',
-      'position':'relative',
-      'float':'right',
-      'min-height':'40em',
-      'min-width':'30%',
-      'top':'7em',
-      'right':'4em'
+    this.style = {
+      'background-color': 'honeydew',
+      'opacity': '0.8',
+      'position': 'relative',
+      'float': 'right',
+      'min-height': '40em',
+      'min-width': '30%',
+      'top': '7em',
+      'right': '4em'
     }
   }
 
-  handleOnchange(e){
-  
+  handleOnchange(e) {
+
     const data = e.target.value;
-    if(data.trim() === "?" | data.trim() === "？"){
-      const city = ['北京','天津','河北','山西','内蒙古','辽宁',
-      '吉林','黑龙江','上海','江苏','浙江','安徽','福建','江西',
-      '山东','河南','湖北','湖南','广东','广西','海南',
-      '四川','贵州','云南','重庆','西藏',
-      '陕西','甘肃','青海','宁夏','新疆','香港','澳门','台湾']
-      let newdata  = city.reduce((pre,cur)=>{
+    if (data.trim() === "?" | data.trim() === "？") {
+      const city = ['北京', '天津', '河北', '山西', '内蒙古', '辽宁',
+        '吉林', '黑龙江', '上海', '江苏', '浙江', '安徽', '福建', '江西',
+        '山东', '河南', '湖北', '湖南', '广东', '广西', '海南',
+        '四川', '贵州', '云南', '重庆', '西藏',
+        '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾']
+      let newdata = city.reduce((pre, cur) => {
         return pre + cur + ':\n'
-      },'')
-      this.setState({value:newdata})
+      }, '')
+      this.setState({ value: newdata })
       return;
     }
 
     const seperator = ':';
-    const newdata = data.replace(/(，|；|：| +|,|;|:+|\t)/g,seperator)
-    this.setState({value:newdata.toString()})
+    const newdata = data.replace(/(，|；|：| +|,|;|:+|\t)/g, seperator)
+    this.setState({ value: newdata.toString() })
 
+
+    // by default , show the first colume data
     let out = {};
     const row = newdata.toString();
-    
-    row.split("\n").map((item)=>{
-      if(item.trim().length > 0){
-        let [key,value] = item.split(seperator);
+
+    row.split("\n").map((item) => {
+      if (item.trim().length > 0) {
+        let [key, value] = item.split(seperator);
         // let kep = item.split(seperator);
         // let key = kep[0];
         // let value = kvp[this.state.index];
-        out[key.trim()] =value?parseFloat(value.trim()):null;
+        out[key.trim()] = value ? parseFloat(value.trim()) : null;
       }
     })
     const map = this.props.map;
-      Tools.updateProvinceLayer(map,out);
+    Tools.updateProvinceLayer(map, out);
 
-       
+
 
   }
-  handleChangeChoose(e){
+  handleChangeChoose(e) {
     debugger;
     // this.setState({index:e.target.value})
     let data = this.state.value;
     let out = {};
     const row = data.toString();
     const seperator = ':';
-    
-    row.split("\n").map((item)=>{
-      if(item.trim().length > 0){
+
+    row.split("\n").map((item) => {
+      if (item.trim().length > 0) {
         // let [key,value] = item.split(seperator);
         // let kvp =item.split(seperator);
         let kvp = item.split(seperator);
         let key = kvp[0];
         let value = kvp[e.target.value];
-        out[key.trim()] =value?parseFloat(value.trim()):null;
+        out[key.trim()] = value ? parseFloat(value.trim()) : null;
       }
     })
     const map = this.props.map;
-      Tools.updateProvinceLayer(map,out);
+    Tools.updateProvinceLayer(map, out);
   }
-  render(){
 
-    const items = [1,2,3,4,5,6,7,8,9,10];
-    const cols = items.map((item)=>{
-      return (<li  key = {item.toString()}>{item.toString()+": "}<input name='col' type="radio" value={item} onChange = {this.handleChangeChoose}/></li>)
+
+  render() {
+
+    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const cols = items.map((item) => {
+      return (<li key={item.toString()}>{item.toString() + ": "}<input name='col' type="radio" value={item} onChange={this.handleChangeChoose} /></li>)
     })
 
-    if(this.props.themeData)
-  return(<div className = 'themedatabox'>
-        <ol >
+    if (this.props.themeData)
+      return (<div className='themedatabox'>
+        {/* <ol >
           {cols}
-        </ol>
-        <textarea id="themedataTextarea" value={this.state.value} 
+        </ol> */}
+        <ChooseBar value={this.state.value} map={this.state.map}/>
+        <textarea id="themedataTextarea" value={this.state.value}
           // style={this.style} 
           // index = {this.state.index}
           onChange={this.handleOnchange}>
 
         </textarea>
-    </div>) 
+      </div>)
     else {
       return <></>
     }
@@ -179,8 +262,8 @@ class App extends React.Component {
         { "fadfaf": "fadsfd" }
       ],
       tableshow: false,
-      themeData:false,
-      map:null,
+      themeData: false,
+      map: null,
       mapTitle: "中国地图"
     }
     // this.hideDrawBox = this.hideDrawBox.bind(this);
@@ -198,8 +281,8 @@ class App extends React.Component {
         <TableContainer tableshow={this.state.tableshow} featuredata={this.state.featuredata} />
         <canvas id="deck-canvas" className="trcl"></canvas>
         <MapTitle className='mapTitle' title={this.state.mapTitle} />
-        
-        <ThemeData className ='themedata' themeData = {this.state.themeData} map={this.state.map}/>
+
+        <ThemeData className='themedata' themeData={this.state.themeData} map={this.state.map} />
       </div>
 
     )
@@ -256,8 +339,8 @@ class App extends React.Component {
           bearing: INITIAL_VIEW_STATE.bearing,
           pitch: INITIAL_VIEW_STATE.pitch
         });
-        me.setState({map:map});// 
-        this.map= map;
+        me.setState({ map: map });// 
+        this.map = map;
         this.style = style;
         map.VRApp = me;
 
@@ -265,18 +348,18 @@ class App extends React.Component {
 
         map.on('click', (e) => {
           e.preventDefault();
-          
-          if(map.getLayer("selectedFeature")){
-            let data =  {
-                type : "FeatureCollection",
-                features:[
-  
-                ]
-              };
-            map.getSource("selectedFeature").setData(data)
-          } 
 
-          if(me.state.tableshow){
+          if (map.getLayer("selectedFeature")) {
+            let data = {
+              type: "FeatureCollection",
+              features: [
+
+              ]
+            };
+            map.getSource("selectedFeature").setData(data)
+          }
+
+          if (me.state.tableshow) {
             me.setState({ tableshow: false })
 
           }
@@ -377,8 +460,8 @@ class App extends React.Component {
           onChange: (style) => {
             // current style
             // later will change
-         
-        
+
+
             // debugger;
             // var layers = map.getStyle();
 
@@ -416,15 +499,15 @@ class App extends React.Component {
         tool.addTool("室", Tools.addIndoorLayer);
 
         // tool.addTool("trip", Tools.addTripLayer);
-        tool.addTool("新", ()=>{
-          if(this.map.themeLayer){
-          me.setState({themeData:false})
-          this.map.themeLayer = false;
+        tool.addTool("新", () => {
+          if (this.map.themeLayer) {
+            me.setState({ themeData: false })
+            this.map.themeLayer = false;
 
             return
           }
           this.map.themeLayer = true;
-          me.setState({themeData:true})
+          me.setState({ themeData: true })
         });
 
         tool.addTool("省", Tools.addProvince);
@@ -435,32 +518,32 @@ class App extends React.Component {
       },
       otherOprations: function () {
         let map = this.map;
-        map.on('load',()=>{
-         
-          map.addSource("selectedFeature",{
-         
+        map.on('load', () => {
+
+          map.addSource("selectedFeature", {
+
             type: "geojson",
             data: {
-              type : "FeatureCollection",
-              features:[
+              type: "FeatureCollection",
+              features: [
 
               ]
             }
-          
-        });
-        map.addLayer({
-          id: "selectedFeature",
-          'source': "selectedFeature",
-          'type': 'fill-extrusion',
-          'paint': {
-            "fill-extrusion-color": "rgb(255,255,3)",
-            "fill-extrusion-opacity": 0.4,
-            "fill-extrusion-height": 8000
-          },
+
+          });
+          map.addLayer({
+            id: "selectedFeature",
+            'source': "selectedFeature",
+            'type': 'fill-extrusion',
+            'paint': {
+              "fill-extrusion-color": "rgb(255,255,3)",
+              "fill-extrusion-opacity": 0.4,
+              "fill-extrusion-height": 8000
+            },
+          })
         })
-        })
-        
-       
+
+
       }
     };
 
