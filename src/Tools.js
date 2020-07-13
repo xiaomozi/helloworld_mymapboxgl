@@ -7,9 +7,10 @@ import "mapbox-gl-draw/dist/mapbox-gl-draw.css"
 // import turf from "turf";
 import "./DrawControInfo.css";
 // import { map } from "d3";
-
+// import * as d3 from 'd3';
 import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer } from "./plugins/myDeckLayer";
 import earthquakedata from "./data/earthquakes.json";
+import earthquakeslastyear from './data/earthquackslastyear.json';
 import Minimap from "./plugins/mapboxgl-minimapControl";
 
 
@@ -17,6 +18,8 @@ import provincedata from "./data/chinamap";
 import guangdong from "./data/guangdong.json";
 
 import indoorData from "./data/indoor-3d-map.json";
+
+import MyLegend from './plugins/controles/legend';
 
 
 function addBuilding(map) {
@@ -398,10 +401,12 @@ function updateProvinceLayer(map, json) {
       }
     }
 
-   
+    const maxValue = Math.max(...Object.values(themedata));
+    const minValue = Math.min(...Object.values(themedata));
+    map.legend.update(minValue,maxValue);
+
     function rescaledata(pre){
-      const maxValue = Math.max(...Object.values(themedata));
-      const minValue = Math.min(...Object.values(themedata));
+      
       const maxExtent = 255;
       const minExtent = 50;
       return Math.ceil((pre-minValue + 1) * (maxExtent-minExtent) / (maxValue + 1 - minValue) + minExtent-1);
@@ -436,6 +441,15 @@ function updateProvinceLayer(map, json) {
 //add province layer 
 function addProvince(map) {
   addGeojsonLayer(map);
+  if(!map.legend){
+    map.legend = MyLegend();
+    debugger;
+    map.addControl(map.legend,"bottom-left")
+    
+  }else{
+    map.removeControl(map.legend)
+    map.legend = null;
+  }
   // addGeojsonLayer(map, guangdong, "guangdong");
 
 }
@@ -494,9 +508,9 @@ function ODFly(map) {
   }
 
 
-  ODs.push([[112.0, 22.0], [115.34, 40.04]])
-  ODs.push([[113.0, 22.0], [115.34, 40.04]])
-  ODs.push([[115.0, 22.0], [115.34, 40.04]])
+  ODs.push([[112.0, 23.0], [113.34, 22.04]])
+  ODs.push([[113.0, 24.0], [113.34, 22.04]])
+  ODs.push([[114.0, 22.0], [113.34, 22.04]])
 
   ODs.push([[121.28, 31.31], [102.47, 18.87]])
   ODs.push([[104.24, 30.716], [102.47, 18.87]])
@@ -582,7 +596,7 @@ function ODFly(map) {
   // addRoute([111.0, 22.0], [115.34, 40.04]);
   // addRoute([112.0, 21.0], [115.34, 40.04]);
 
-  const initRoute = Object.assign({}, route);
+  const initRoute =JSON.parse(JSON.stringify(route))
 
   // A single point that animates along the route.
   // Coordinates are initially set to origin.
@@ -615,8 +629,10 @@ function ODFly(map) {
         let segment = turf.along(feature, i, "kilometers");
         arc.push(segment.geometry.coordinates);
       }
-      // arcs.push(arc);
+      let end = feature.geometry.coordinates.slice(-1)[0];//add the end point
       feature.geometry.coordinates = arc;
+      feature.geometry.coordinates.push(end);
+
       //update point ,add each line start point to point
       point.features.push({
         "type": "Feature",
@@ -700,7 +716,7 @@ function ODFly(map) {
   const maxNum = route.features.reduce((me, next) => {
     return me > next.geometry.coordinates.length ? me : next.geometry.coordinates.length
   })
-  var counter = 0;
+  var counter = 1;
   var moveHandlerId;
   function animate(t) {
     // console.log(counter)
@@ -717,8 +733,8 @@ function ODFly(map) {
       if (line.geometry.coordinates.length > counter) {
         p.geometry.coordinates = line.geometry.coordinates[counter];
         p.properties.bearing = turf.bearing(
-          turf.point(line.geometry.coordinates[0]),
-          turf.point(line.geometry.coordinates[1])
+          turf.point(line.geometry.coordinates[counter-1]),
+          turf.point(line.geometry.coordinates[counter])
         )
       }
 
@@ -855,6 +871,7 @@ function addHotLayer(map) {
       }
     },
       "waterway-label");
+
     let pulsingDot = new _PulsingPointControl();
     map.addImage("pulsing-dot", pulsingDot, { pixelRatio: 2 });
     map.addLayer({
@@ -950,19 +967,37 @@ function addCluster(map) {
     updateMapTitle(map, "中国地图");
   } else {
     app.ClusterLayer = true;
-    updateMapTitle(map, "世界地震据类分布地图");
+    updateMapTitle(map, "世界最近地震分布地图");
 
     if (!map.getSource(earthquakes)) {
       map.addSource(earthquakes, {
         type: "geojson",
         // Point to GeoJSON data. This example visualizes all M1.0+ earthquakes
         // from 12/22/15 to 1/21/16 as logged by USGS" Earthquake hazards program.
-        data: earthquakedata,
+        data: earthquakeslastyear,
         cluster: true,
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
       });
     }
+
+    // const tin = turf.tin(earthquakeslastyear, "mag");
+    // map.addSource("tin-last", {
+    //   type: "geojson",
+    //   data: tin
+    // })
+
+    // map.addLayer({
+    //   id: "earthquack-tin-last",
+    //   type: "fill",
+    //   source: "tin-last",
+    //   paint: {
+    //     "fill-color": "rgba(0,0,0,0)",
+    //     "fill-opacity": 1,
+    //     "fill-outline-color": "gray"
+    //   }
+    // })
+
 
     map.addLayer({
       id: "clusters",
@@ -1317,9 +1352,38 @@ function _updateTable(geojson) {
     data["值"] = properties[key];
     featureinfo.push(data);
   });
+ 
+
+  // geojson.target.setPaintProperty('higiLight',{
+    
+      
+  //     "fill-extrusion-color": 'yellow',
+
+  //     "fill-extrusion-height": ["get", "height"],
+
+  //     "fill-extrusion-base": ["get", "base_height"],
+
+  //     "fill-extrusion-opacity": 0.6
+  //   }
+
+  // );
+  geojson.target.getSource('higiLight').setData({
+
+      type: "FeatureCollection",
+      features: [
+        {
+          "type":"Featrue",
+          "properties": properties,
+          "geometry": geojson.features[0].geometry
+        }
+      ]
+    })
+
 
   app.setState({ featuredata: featureinfo, tableshow: true });
+
 }
+
 
 // React.lazy()
 function addIndoorLayer(map) {
@@ -1360,7 +1424,7 @@ function addIndoorLayer(map) {
         "fill-extrusion-base": ["get", "base_height"],
 
         // Make extrusions slightly opaque for see through indoor walls.
-        "fill-extrusion-opacity": 0.5
+        "fill-extrusion-opacity": 0.6
       }
     })
   }
@@ -1368,7 +1432,20 @@ function addIndoorLayer(map) {
   const bound = turf.bbox(indoorData);
   map.fitBounds(bound)
 
-  map.on("click", sourceid, _updateTable)
+  map.on("click", sourceid, _updateTable);
+  // map.on('mouseenter',sourceid,(feature)=>{
+  //   map.setFeatureState(
+  //     { source: 'states', id: feature.features[0].id },
+  //     { hover: true }
+  //     );
+  // });
+  // map.on('mouseleave',sourceid,(feature)=>{
+  //   map.setFeatureState(
+  //     { source: 'states', id: hoveredStateId },
+  //     { hover: false }
+  //     );
+  // })
+
 }
 
 export default {

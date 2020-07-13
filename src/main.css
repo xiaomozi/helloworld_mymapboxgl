@@ -1,22 +1,7 @@
 body { margin: 0; padding: 0; }
 #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-.mapboxgl-ctrl-logo {
-    visibility: hidden;
-}
 
-#map-title {
-    position:absolute;
-    top: 0.5em;
-    left: 0.5em;
-    width: 15em;
-    height: 1.5em;
-    background-color:rgba(0, 0, 0, 0.25);    
-    border: 1px black;
-    border-color: black;
-    /* align-content: center; */
-    text-align: center;
-    font-size: 30px;
-}
+
 
 #menu {
     background: #fff;

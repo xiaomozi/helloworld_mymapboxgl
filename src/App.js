@@ -63,11 +63,11 @@ function TableContainer(props) {
 
 class ListItem extends React.Component {
   // 正确！这里不需要指定 key：
-  constructor(props){
+  constructor(props) {
     super(props);
     this.handleChangeChoose = this.handleChangeChoose.bind(this);
     this.order = props.order;
-    
+
   }
 
   handleChangeChoose(e) {
@@ -81,14 +81,17 @@ class ListItem extends React.Component {
 
     row.split("\n").map((item) => {
       if (item.trim().length > 0) {
-       
+
         let kvp = item.split(seperator);//[]
         let key = kvp[0];//the first filed --- province
         let value = kvp[this.order];
-        out[key.trim()] = value ? parseFloat(value.trim()) : null;
+        if (parseFloat(value.trim())) {
+          out[key.trim()] = value ? parseFloat(value.trim()) : null;
+        }
       }
     })
     const map = this.props.map;
+    debugger;
     Tools.updateProvinceLayer(map, out);
   }
 
@@ -126,8 +129,8 @@ class ChooseBar extends React.Component {
 
   render() {
     let headers = this.getTitles(this.props);
-    let items = headers.map((item,index) =>
-      <ListItem key={item} value={item} order ={index+1} data={this.props.value} map = {this.props.map}></ListItem>
+    let items = headers.map((item, index) =>
+      <ListItem key={item} value={item} order={index + 1} data={this.props.value} map={this.props.map}></ListItem>
     )
 
     return (
@@ -189,10 +192,12 @@ class ThemeData extends React.Component {
     row.split("\n").map((item) => {
       if (item.trim().length > 0) {
         let [key, value] = item.split(seperator);
-        // let kep = item.split(seperator);
-        // let key = kep[0];
-        // let value = kvp[this.state.index];
-        out[key.trim()] = value ? parseFloat(value.trim()) : null;
+
+        if (!value) { return }
+        if (parseFloat(value.trim())) {
+          out[key.trim()] = value ? parseFloat(value.trim()) : null;
+
+        }
       }
     })
     const map = this.props.map;
@@ -236,7 +241,7 @@ class ThemeData extends React.Component {
         {/* <ol >
           {cols}
         </ol> */}
-        <ChooseBar value={this.state.value} map={this.props.map}/>
+        <ChooseBar value={this.state.value} map={this.props.map} />
         <textarea id="themedataTextarea" value={this.state.value}
           // style={this.style} 
           // index = {this.state.index}
@@ -330,6 +335,7 @@ class App extends React.Component {
         var mytoken = 'pk.eyJ1IjoieGlhb21vemkiLCJhIjoiY2tibTNoeTd1MGhkcjJycG85aW55MzdjeiJ9.yxRH4UcmeNF0HR1VdNMFIQ'
         // mapboxgl.accessToken = 'pk.eyJ1Ijoiemh1d2VubG9uZyIsImEiOiJjazdhNGF6dzIwd3V0M21zNHU1ejZ1a3Q4In0.VkUeaPhu-uMepNBOMc_UdA';
         mapboxgl.accessToken = mytoken;
+
         // const app = {};
         const map = new mapboxgl.Map({
           container: "map",
@@ -436,21 +442,21 @@ class App extends React.Component {
         map.addControl(new StylesControl({
           styles: [
             {
-              label: 'Streets',
+              label: '街道',
               styleName: 'Mapbox Streets',
               styleUrl: 'mapbox://styles/mapbox/streets-v9',
             }, {
-              label: 'Satellite',
+              label: '卫星',
               styleName: 'Satellites',
               styleUrl: 'mapbox://styles/mapbox/satellite-v9',
             },
             {
-              label: "白天模式",
+              label: "白天",
               tyleName: "light",
               styleUrl: "mapbox://styles/mapbox/light-v10"
             },
             {
-              label: "夜间模式",
+              label: "夜间",
               styleName: "dark",
               styleUrl: style.dark
             }, {
@@ -520,29 +526,60 @@ class App extends React.Component {
       },
       otherOprations: function () {
         let map = this.map;
+
         map.on('load', () => {
 
           map.addSource("selectedFeature", {
-
-            type: "geojson",
-            data: {
+            type: 'geojson',
+            data:
+            {
               type: "FeatureCollection",
               features: [
 
               ]
-            }
-
+            },
           });
+
           map.addLayer({
             id: "selectedFeature",
             'source': "selectedFeature",
             'type': 'fill-extrusion',
             'paint': {
-              "fill-extrusion-color": "rgb(255,255,3)",
-              "fill-extrusion-opacity": 0.4,
-              "fill-extrusion-height": 8000
+              "fill-extrusion-color": "rgb(100,100,203)",
+              "fill-extrusion-opacity": 0.8,
+              "fill-extrusion-height": 15000
             },
           })
+
+          map.addSource("higiLight", {
+            type: 'geojson',
+            data:
+            {
+              type: "FeatureCollection",
+              features: [
+
+              ]
+            },
+          });
+
+
+          map.addLayer({
+            id: "higiLight",
+            'source': "higiLight",
+            'type': 'fill-extrusion',
+            'paint': {
+
+              "fill-extrusion-color": 'yellow',
+
+              "fill-extrusion-height": ["get", "height"],
+
+              "fill-extrusion-base": ["get", "base_height"],
+
+              "fill-extrusion-opacity": 1
+            },
+          })
+
+
         })
 
 
