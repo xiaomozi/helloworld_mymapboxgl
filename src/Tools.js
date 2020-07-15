@@ -20,6 +20,7 @@ import guangdong from "./data/guangdong.json";
 import indoorData from "./data/indoor-3d-map.json";
 
 import MyLegend from './plugins/controles/legend';
+import { variance } from "d3";
 
 
 function addBuilding(map) {
@@ -47,6 +48,7 @@ function addBuilding(map) {
       break;
     }
   }
+  console.log(app.labelLayerId)
   map.addLayer({
     "id": "3d-buildings",
     "source": "composite",
@@ -57,9 +59,9 @@ function addBuilding(map) {
     "paint": {
       "fill-extrusion-color": [
         "interpolate", ["linear"], ["get", "height"],
-        0, "green",
-        10.05, "red",
-        100, "yellow"
+        0, "blue",
+        20.05, "blue",
+        100, "royalblue"
       ],
 
       // 使用“插值”表达式为
@@ -130,6 +132,7 @@ function drawControl(map) {
     var result;
     if (data.features.length > 0) {
       let lastFeature = data.features.pop();
+     // console.log(JSON.stringify(lastFeature.geometry.coordinates));
 
       switch (lastFeature.geometry.type) {
         case "LineString":
@@ -156,7 +159,7 @@ function drawControl(map) {
           break;
         case "Point":
           result = lastFeature.geometry.coordinates;
-          answer.innerHTML = "lng: " + result[0].toFixed(2) + ";<br> lat:" + result[1].toFixed(2);
+          answer.innerHTML = "lng: " + result[0].toFixed(5) + ";<br> lat:" + result[1].toFixed(5);
 
           break;
         default:
@@ -461,8 +464,14 @@ function addHexagonLayer(map) {
     return
   }
   map.VRApp.HexagonLayer = true;
+  let nextlayer = map.getLayer('waterway-label')
+  if(nextlayer){
+    map.addLayer(hexagonLayer(), 'waterway-label')
 
-  map.addLayer(hexagonLayer(), "waterway-label")
+  }else{
+    map.addLayer(hexagonLayer(), nextlayer)
+
+  }
   map.flyTo({
     center: [-2.67, 52.74]
   });
@@ -480,9 +489,15 @@ function addEaseLayer(map) {
     return
   }
   map.VRApp.easeLayer = true;
-
-  map.addLayer(arcsLayer(), "waterway-label");
-  map.addLayer(myDeckLayer(), "waterway-label");
+  let nextlayer =  map.getLayer("waterway-label");
+  if(nextlayer){
+    map.addLayer(arcsLayer(), "waterway-label");
+    map.addLayer(myDeckLayer(), "waterway-label");
+  }else{
+    map.addLayer(arcsLayer(), nextlayer);
+    map.addLayer(myDeckLayer(), nextlayer);
+  }
+  
 
   map.flyTo({
     center: [-92.67, 35.74]
@@ -497,15 +512,27 @@ function ODFly(map) {
   //center:【120，30】
   let ODs = [];
 
-  let center = [121.81, 31.152]
-  for (let i = 0; i < 50; i++) {
-    ODs.push([[center[0], center[1]], [center[0] - Math.ceil(Math.random() * 20), center[1] + Math.ceil(Math.random() * 20)]])
-  }
+  // let center = [121.81, 31.152]
+  // for (let i = 0; i < 50; i++) {
+  //   ODs.push([[center[0], center[1]], [center[0] - Math.ceil(Math.random() * 20), center[1] + Math.ceil(Math.random() * 20)]])
+  // }
 
-  let center1 = [109.81, 23.152]
-  for (let i = 0; i < 50; i++) {
-    ODs.push([[center1[0] + Math.ceil(Math.random() * 5), center1[1] + Math.ceil(Math.random() * 25)], [center1[0], center1[1]]])
-  }
+  // let center1 = [109.81, 23.152]
+  // for (let i = 0; i < 50; i++) {
+  //   ODs.push([[center1[0] + Math.ceil(Math.random() * 5), center1[1] + Math.ceil(Math.random() * 25)], [center1[0], center1[1]]])
+  // }
+
+//-87.61 ,41.87
+// -87.62 ,41.86
+
+// -87.62, 41.865
+// -87.62 ,41.87
+//-87.61892,41.86457 -87.61921,41.86639
+//ODs.push([[-87.61833488428364,41.866675445125225],[-87.61830903398912,41.86576295494416],[-87.61806956313833,41.865760952852725],[-87.61806956313833,41.86578672810654],[-87.61736085940719,41.86579654724807],[-87.6173575631105,41.865675035265525],[-87.61722571125372,41.86567380787088],[-87.61722571125372,41.8655940271494],[-87.61682521123835,41.86559525454555],[-87.61682438991868,41.86567903164422],[-87.61669529225254,41.86568096411628],[-87.61669918464439,41.86581140587799],[-87.61594466569298,41.86582153505054],[-87.61594554374146,41.86579864884524],[-87.61570025541522,41.865799964568936],[-87.61570828938017,41.866136505992614],[-87.61543952612777,41.866138756239366],[-87.61544325057733,41.86636064545911],[-87.61571513537116,41.86636619267975],[-87.61572630871919,41.8667184402035],[-87.61596467346955,41.866715666608286],[-87.61596467346955,41.866685157055855],[-87.61672446111334,41.86667960986284],[-87.61670956331635,41.86679610081359],[-87.61685854128547,41.866798874405305],[-87.61685854128547,41.86685711979848],[-87.6172384351077,41.8668598933871],[-87.6172384351077,41.86679610081359],[-87.61740231087379,41.86679055363024],[-87.61740231087379,41.86667960986284],[-87.61808760953271,41.866662968281105],[-87.61808760953271,41.86669070424833],[-87.61833342318155,41.86668238345962]])
+ODs.push([[-87.61816016588162,41.865021643668],[-87.61815838732088,41.86519859953938],[-87.61555868612129,41.865237626881054],[-87.61557903274625,41.865039719715014],[-87.61518323664133,41.865066031467364],[-87.61521043203282,41.865826520267376],[-87.61505966330793,41.8659261985477],[-87.61420976660311,41.86595991918949],[-87.61421155856249,41.86622353094833],[-87.61434162932952,41.866498350430334],[-87.61426954912669,41.86664779109441],[-87.61404299308849,41.86673045173765],[-87.61374229053821,41.86663681228103],[-87.61373765246024,41.86639513149109],[-87.61312117383582,41.86643884427437]])
+ODs.push([[-87.61758563971246,41.865521377266674],[-87.61885354153442,41.86549113296806],[-87.61884683720926,41.86635353911021],[-87.61863663668295,41.86636241567146],[-87.61862499560479,41.86443387472747],[-87.61864956948214,41.86403980190266],[-87.61853806981513,41.86345598961353]])
+ODs.push([[-87.6183197673746,41.868218250837344],[-87.6189211805531,41.86753923141808],[-87.61933505628886,41.86700949494829],[-87.61953552734836,41.86645085900679],[-87.61954846096513,41.86608003762606],[-87.61934798990563,41.86503979993506],[-87.61935737380884,41.86497460504603],[-87.61396202014927,41.8650496359605],[-87.61392929746317,41.86581536299806],[-87.61375340322198,41.86611700303342],[-87.61095332814362,41.86613937382728]])
+ODs.push([[-87.61394669601806,41.86639133441591],[-87.61414339248988,41.86628659256834],[-87.61419005989445,41.866115964750065],[-87.61413076932706,41.86578876091997],[-87.61411855094451,41.86503733560585],[-87.61899348499028,41.86498885026947],[-87.61925555899553,41.866243479270224],[-87.61912375309254,41.866782040025726],[-87.61896090623452,41.86719860958112],[-87.61807483740698,41.86813182871725]])
 
 
   ODs.push([[112.0, 23.0], [113.34, 22.04]])
@@ -531,10 +558,10 @@ function ODFly(map) {
     // var flys = layers.filter((lay) => lay.id.indexOf("fly") == 0)
 
     // flys.map((layer) => map.removeLayer(layer));
-    map.removeLayer(routeLayerId);
-    map.removeLayer(pointLayerId);
-    map.removeSource(routeSource)
-    map.removeSource(pointSource)
+    if(map.getLayer(routeLayerId)) map.removeLayer(routeLayerId);
+    if(map.getLayer(pointLayerId)) map.removeLayer(pointLayerId);
+    if(map.getSource(routeSource)) map.removeSource(routeSource)
+    if(map.getSource(pointSource)) map.removeSource(pointSource)
     // var sources = map.getStyle().sources;
     // // Object.keys(sources)
     // var srcs = Object.keys(sources).filter((src) => src.indexOf("fly") == 0)
@@ -565,12 +592,12 @@ function ODFly(map) {
     ]
   };
 
-  var featureLine = function (coord1, coord2) {
+  var featureLine = function (coords) {
     return {
       "type": "Feature",
       "geometry": {
         "type": "LineString",
-        "coordinates": [coord1, coord2]
+        "coordinates": [...coords]
       }
     }
   }
@@ -580,8 +607,8 @@ function ODFly(map) {
     route.features.push(feature)
   }
 
-  function addRoute(coord1, coord2) {
-    _addFeatureToRoute(featureLine(coord1, coord2));
+  function addRoute(coords) {
+    _addFeatureToRoute(featureLine(coords));
 
   }
 
@@ -589,7 +616,7 @@ function ODFly(map) {
   ///test[112.98, 22.16], [116.34, 40.04]
   // route.features.pop();
   ODs.map((od) => {
-    addRoute(od[0], od[1]);
+    addRoute(od);
 
   })
   // addRoute([112.0, 22.0], [115.34, 40.04]);
@@ -614,7 +641,7 @@ function ODFly(map) {
     ]
   };
   var step = 100;
-  let stepDistance = 2;
+  let stepDistance = 0.002;//km
   // point.features.pop();
   function _updateroute() {
     // var distances = [],arcs = [];
@@ -666,6 +693,7 @@ function ODFly(map) {
     "data": point
   });
 
+  // add routelayer
   map.addLayer({
     "id": routeLayerId,
     "source": routeSource,
@@ -673,8 +701,8 @@ function ODFly(map) {
     "paint": {
       "line-width": 1,
       // "line-color": "yellow",
-      "line-color": "yellow",
-      "line-opacity": 0.3
+      "line-color": "rgb(200,200,50)",
+      "line-opacity": 1,
       // "line-blur": 1,
       // "line-gradient": [
       //   "interpolate",
@@ -695,7 +723,7 @@ function ODFly(map) {
       "line-join": "round"
     }
   });
-  const pulsingDot = _FlyingTraceIcon(50);
+  const pulsingDot = _CoustomPulsingPointControl(15,{r:255,g:255,b:0},{r:200,g:200,b:100});
 
   map.addImage("fly-dot", pulsingDot, { pixelRatio: 1 });
   // const icon = _PulsingPointControl(200);
@@ -723,25 +751,38 @@ function ODFly(map) {
     // console.log(t,"time");
 
     if (counter > maxNum) {
-      cancelAnimationFrame(app.moveHandlerId);
-      alert("done")
-      return;
+      // cancelAnimationFrame(app.moveHandlerId);
+      // alert("done")
+      counter = 1;//整体开启循环
+      // return;
     }
     route.features.map((line, index) => {
       let p = point.features[index];
+      let length = line.geometry.coordinates.length;
       // console.log(counter, index)
-      if (line.geometry.coordinates.length > counter) {
+      if (length > counter) {
         p.geometry.coordinates = line.geometry.coordinates[counter];
         p.properties.bearing = turf.bearing(
           turf.point(line.geometry.coordinates[counter-1]),
           turf.point(line.geometry.coordinates[counter])
+        )
+      } else{
+        //单条路线开始重新播放
+        p.geometry.coordinates = line.geometry.coordinates[counter%length];
+        p.properties.bearing = turf.bearing(
+          turf.point(line.geometry.coordinates[0]),
+          turf.point(line.geometry.coordinates[1])
         )
       }
 
     });
 
     // Update the source with this new data.
-    map.getSource(pointSource).setData(point);
+    let ps = map.getSource(pointSource);
+    if(ps){
+      ps.setData(point);
+    
+    }
 
     // // Request the next frame of animation so long the end has not been reached.
     // if (counter < step) {
@@ -787,6 +828,11 @@ function addHotLayer(map) {
       type: "geojson",
       data: tin
     })
+
+    var nextLayer = map.getLayer("waterway-label")
+    if(nextLayer){
+      nextLayer = "waterway-label"
+    }
 
     map.addLayer({
       id: "earthquack-tin",
@@ -870,9 +916,9 @@ function addHotLayer(map) {
         ]
       }
     },
-      "waterway-label");
+    nextLayer);
 
-    let pulsingDot = new _PulsingPointControl();
+    let pulsingDot = new _PulsingPointControl(100);
     map.addImage("pulsing-dot", pulsingDot, { pixelRatio: 2 });
     map.addLayer({
       id: "earthIcon",
@@ -932,7 +978,7 @@ function addHotLayer(map) {
           ]
         }
       },
-      "waterway-label"
+      nextLayer
     );
   }
   function removeEarthquake() {
@@ -1287,7 +1333,94 @@ function _PulsingPointControl(size) {
 
   return pulsingDot;
 }
+function _CoustomPulsingPointControl(size,color1,color2) {
+  var size = size ? size : 200;
 
+  // implementation of CustomLayerInterface to draw a pulsing dot icon on the map
+  // see https://docs.mapbox.com/mapbox-gl-js/api/#customlayerinterface for more info
+  var pulsingDot = {
+    width: size,
+    height: size,
+    data: new Uint8Array(size * size * 4),
+
+    // get rendering context for the map canvas when layer is added to the map
+    onAdd: function (map) {
+      this._map = map;
+      var canvas = document.createElement("canvas");
+      canvas.width = this.width;
+      canvas.height = this.height;
+      this.context = canvas.getContext("2d");
+    },
+
+    // called once before every frame where the icon will be used
+    render: function () {
+      var duration = 1000;
+      var t = (performance.now() % duration) / duration;
+
+      var radius = (size / 2) * 0.3;
+      var outerRadius = (size / 2) * 0.7 * t + radius;
+      var context = this.context;
+
+      // draw outer circle
+      context.clearRect(0, 0, this.width, this.height);
+      context.beginPath();
+      context.arc(
+        this.width / 2,
+        this.height / 2,
+        outerRadius,
+        0,
+        Math.PI * 2
+      );
+      context.fillStyle = `rgba(${color1.r}, ${color1.g}, ${color1.b},${1-t} )`;
+      context.fill();
+
+      // draw inner circle
+      context.beginPath();
+      context.arc(
+        this.width / 2,
+        this.height / 2,
+        radius,
+        0,
+        Math.PI * 2
+      );
+      context.fillStyle = `rgba(${color2.r}, ${color2.g}, ${color2.b}, 1)`;
+      context.strokeStyle = "yellow";
+      context.lineWidth = 1 + 4 * (1 - t);
+      context.fill();
+      context.stroke();
+
+      // context.beginPath(); //新建一条path
+      // var grd = context.createLinearGradient(0, 0, 10,0);
+      // grd.addColorStop(0, "white");
+      // grd.addColorStop(1, "yellow");
+      // context.strokeStyle = grd;
+      // context.lineWidth = 1 + 2 * (1 - t);
+
+      // context.moveTo(this.width / 2, this.height / 2); //把画笔移动到指定的坐标
+      // context.lineTo(this.width/2,0);  //绘制一条从当前位置到指定坐标(200, 50)的直线.
+      // //闭合路径。会拉一条从当前点到path起始点的直线。如果当前点与起始点重合，则什么都不做
+      // context.closePath();
+      // context.stroke(); //绘制路径。
+
+
+      // update this image"s data with data from the canvas
+      this.data = context.getImageData(
+        0,
+        0,
+        this.width,
+        this.height
+      ).data;
+
+      // continuously repaint the map, resulting in the smooth animation of the dot
+      this._map.triggerRepaint();
+
+      // return `true` to let the map know that the image was updated
+      return true;
+    }
+  };
+
+  return pulsingDot;
+}
 function overView(map) {
   let app = map.VRApp;
   let style = "mapbox://styles/mapbox/light-v10"
@@ -1332,8 +1465,51 @@ function addRenderDem(map) {
 }
 
 function addTripLayer(map) {
-  debugger;
-  map.addLayer(tripLayer, "waterway-label");
+  // debugger;
+  // let nextlayer = map.getLayer('waterway-label')
+  // if(nextlayer){
+  //   map.addLayer(tripLayer,'waterway-label');
+
+  // }else{
+  //   map.addLayer(tripLayer);
+
+  // }
+  // debugger;
+  // if(map.VRApp.showDeck)
+  // {
+    map.VRApp.setState({showDeck:true})
+    // return tripLayer;
+
+  // } 
+}
+
+function closeTripLayer(map){
+  map.VRApp.setState({showDeck:false})
+
+}
+
+function showTripLayer(map){
+  if(map.VRApp.state.showDeck){
+    console.log(tripLayer)
+    function _animate() {
+      const loopLength = 1800, // unit corresponds to the timestamp in source data
+        animationSpeed = 30; // unit time per second
+      
+      const timestamp = Date.now() / 1000;
+      const loopTime = loopLength / animationSpeed;
+  
+     
+      tripLayer.time = ((timestamp % loopTime) / loopTime) * loopLength ;
+      
+        tripLayer._animationFrame = window.requestAnimationFrame(_animate);
+    }
+
+    return tripLayer;
+
+  }else{
+    return {}
+  }
+
 }
 
 function _updateTable(geojson) {
@@ -1390,10 +1566,12 @@ function addIndoorLayer(map) {
   const sourceid = "indoordata";
   let app = map.VRApp;
   if (app.indoorLayer) {
-    map.removeLayer(sourceid).removeSource(sourceid);
+    if(map.getLayer(sourceid)){
+      map.removeLayer(sourceid).removeSource(sourceid);
+      
+    }
     app.indoorLayer = false;
-    updateMapTitle(map, "地图")
-
+      updateMapTitle(map, "地图")
     return
   }
   updateMapTitle(map, "室内地图")
@@ -1415,7 +1593,7 @@ function addIndoorLayer(map) {
         // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions
 
         // Get the fill-extrusion-color from the source "color" property.
-        "fill-extrusion-color": ["get", "color"],
+        "fill-extrusion-color":'rgb(0,102,255)',
 
         // Get fill-extrusion-height from the source "height" property.
         "fill-extrusion-height": ["get", "height"],
@@ -1424,13 +1602,19 @@ function addIndoorLayer(map) {
         "fill-extrusion-base": ["get", "base_height"],
 
         // Make extrusions slightly opaque for see through indoor walls.
-        "fill-extrusion-opacity": 0.6
+        "fill-extrusion-opacity": 0.5
       }
     })
   }
 
   const bound = turf.bbox(indoorData);
-  map.fitBounds(bound)
+  map.fitBounds(bound,{
+    // linear:true,
+    // padding: {top: 100, bottom:250, left: 150, right: 50},
+    // easing(t){
+    //   return t * 2
+    // }
+  })
 
   map.on("click", sourceid, _updateTable);
   // map.on('mouseenter',sourceid,(feature)=>{
@@ -1460,6 +1644,8 @@ export default {
   overView,
   addRenderDem,
   addTripLayer,
+  closeTripLayer,
+  showTripLayer,
   addIndoorLayer,
   updateProvinceLayer,
 };

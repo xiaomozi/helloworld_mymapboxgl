@@ -18,6 +18,8 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 
+import DeckGL from '@deck.gl/react';
+
 // import MsgBox from './MsgBox';
 import Toolbar from './ToolBar';
 
@@ -271,6 +273,14 @@ class App extends React.Component {
       tableshow: false,
       themeData: false,
       map: null,
+      showDeck:false,
+      tripLayer:{},
+      viewState:{ 
+        latitude: 40.80791,
+          longitude: -74.00807, 
+          zoom: 11,
+        bearing: 0,
+        pitch: 45},
       mapTitle: "中国地图"
     }
     // this.hideDrawBox = this.hideDrawBox.bind(this);
@@ -278,6 +288,11 @@ class App extends React.Component {
   }
 
   render() {
+    let deckLayer;
+    if(this.state.showDeck){
+      deckLayer = <DeckGL viewState={this.state.viewState} layers={Tools.showTripLayer(this.state.map)} />;
+
+    }
     return (
       <div>
         <div id="map"></div>
@@ -290,6 +305,8 @@ class App extends React.Component {
         <MapTitle className='mapTitle' title={this.state.mapTitle} />
 
         <ThemeData className='themedata' themeData={this.state.themeData} map={this.state.map} />
+        {deckLayer}
+        
       </div>
 
     )
@@ -298,7 +315,7 @@ class App extends React.Component {
 
   componentDidMount() {
     // console.log(this, 'Did Mount')
-
+   
     if (!mapboxgl.supported()) {
       alert('Your browser does not support Mapbox GL');
       return;
@@ -314,18 +331,20 @@ class App extends React.Component {
 
       initMap: function () {
         const INITIAL_VIEW_STATE = {
-          latitude: 106,
-          longitude: 30,
-          zoom: 4,
+          latitude: 40.1637,
+          longitude: -74.061,
+          zoom: 15,
           bearing: 0,
           pitch: 45
         };
 
+        // me.setState({viewState:Object.assign({},INITIAL_VIEW_STATE)});
 
         const style = {
           "streets": 'mapbox://styles/mapbox/streets-v11',
           "light": 'mapbox://styles/mapbox/light-v10',
-          "dark": 'mapbox://styles/mapbox/dark-v10',
+          // "dark": 'mapbox://styles/mapbox/dark-v10',
+          "dark":'mapbox://styles/xiaomozi/ckclpp2vb0voy1ho8txzxyob0',
           "satelite-streets": 'mapbox://styles/mapbox/satellite-streets-v11',
           "navi_day": 'mapbox://styles/mapbox/navigation-guidance-day-v4',
           'hillshading': 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g',
@@ -340,7 +359,8 @@ class App extends React.Component {
         const map = new mapboxgl.Map({
           container: "map",
           style: style.mymap, // stylesheet location
-          center: [106, 30.0], // starting position [lng, lat]
+          //center: [106, 30.0], // starting position [lng, lat]
+          center:[INITIAL_VIEW_STATE.longitude,INITIAL_VIEW_STATE.latitude],
           // zoom: 18,// starting zoom
           // interactive:false,
           zoom: INITIAL_VIEW_STATE.zoom,
@@ -352,80 +372,60 @@ class App extends React.Component {
         this.style = style;
         map.VRApp = me;
 
-        // console.log(map);
+       
+        // map.on('load', (e) => {
 
-        map.on('click', (e) => {
-          e.preventDefault();
+        //   // map.addLayer({
+        //   //   id: 'three_layer',
+        //   //   type: 'custom',
+        //   //   renderingMode: '3d',
+        //   //   onAdd: function (map, mbxContext) {
+        //   //     this._map = map;
 
-          if (map.getLayer("selectedFeature")) {
-            let data = {
-              type: "FeatureCollection",
-              features: [
+        //   //     this.tb = {};
+        //   //     this.tb = new window.Threebox(
+        //   //       map,
+        //   //       mbxContext,
+        //   //       { defaultLights: true }
+        //   //     );
+        //   //     //instantiate a red sphere and position it at the origin lnglat
+        //   //     var sphere = this.tb.sphere({ radius: 1000, color: 'red', material: 'MeshStandardMaterial' })
+        //   //       .setCoords([106, 30.0]);
+        //   //     sphere.name = 'redball';
+        //   //     var sphere2 = this.tb.sphere({ radius: 1000, color: 0x0000ff, specular: 0x4488ee, shininess: 120, material: 'MeshPhongMaterial' })
+        //   //       .setCoords([107, 30.0]);
 
-              ]
-            };
-            map.getSource("selectedFeature").setData(data)
-          }
+        //   //     // add sphere to the scene
+        //   //     this.tb.add(sphere);
+        //   //     this.tb.add(sphere2);
+        //   //     // console.log(this,'ddd');
 
-          if (me.state.tableshow) {
-            me.setState({ tableshow: false })
+        //   //     return map;
+        //   //   },
+        //   //   onRemove: function (map, mbxContext) {
 
-          }
-        })
+        //   //     this.tb = {};
 
-        map.on('load', (e) => {
+        //   //   },
+        //   //   _getcolor: function () {
+        //   //     return '#' + Math.floor(Math.random() * 16777215).toString(16);
+        //   //   },
+        //   //   render: function (gl, matrix) {
+        //   //     // let ball = window.tb.world.children.filter((mesh) => mesh.name == 'redball');
+        //   //     // ball[0].material.color.set(this._getcolor());
 
-          // map.addLayer({
-          //   id: 'three_layer',
-          //   type: 'custom',
-          //   renderingMode: '3d',
-          //   onAdd: function (map, mbxContext) {
-          //     this._map = map;
+        //   //     this.tb.update();
+        //   //   }
+        //   // });
 
-          //     this.tb = {};
-          //     this.tb = new window.Threebox(
-          //       map,
-          //       mbxContext,
-          //       { defaultLights: true }
-          //     );
-          //     //instantiate a red sphere and position it at the origin lnglat
-          //     var sphere = this.tb.sphere({ radius: 1000, color: 'red', material: 'MeshStandardMaterial' })
-          //       .setCoords([106, 30.0]);
-          //     sphere.name = 'redball';
-          //     var sphere2 = this.tb.sphere({ radius: 1000, color: 0x0000ff, specular: 0x4488ee, shininess: 120, material: 'MeshPhongMaterial' })
-          //       .setCoords([107, 30.0]);
+        //   // map.on('click', (e) => {
+        //   // e.preventDefault();
+        //   // const tb = map.getLayer('three_layer').implementation.tb;
+        //   // const meshball = tb.world.children[0];
 
-          //     // add sphere to the scene
-          //     this.tb.add(sphere);
-          //     this.tb.add(sphere2);
-          //     // console.log(this,'ddd');
+        //   // })
 
-          //     return map;
-          //   },
-          //   onRemove: function (map, mbxContext) {
-
-          //     this.tb = {};
-
-          //   },
-          //   _getcolor: function () {
-          //     return '#' + Math.floor(Math.random() * 16777215).toString(16);
-          //   },
-          //   render: function (gl, matrix) {
-          //     // let ball = window.tb.world.children.filter((mesh) => mesh.name == 'redball');
-          //     // ball[0].material.color.set(this._getcolor());
-
-          //     this.tb.update();
-          //   }
-          // });
-
-          // map.on('click', (e) => {
-          // e.preventDefault();
-          // const tb = map.getLayer('three_layer').implementation.tb;
-          // const meshball = tb.world.children[0];
-
-          // })
-
-        })
+        // })
 
 
       },
@@ -466,18 +466,7 @@ class App extends React.Component {
             }
           ],
           onChange: (style) => {
-            // current style
-            // later will change
-
-
-            // debugger;
-            // var layers = map.getStyle();
-
-            // layers = layers.layers;
-            // console.log(layers);
-            // console.log(style);
-            // map.setStyle(style.styleUrl);
-            // map.moveLayer()
+            //
           },
         }), 'bottom-right');
 
@@ -504,6 +493,10 @@ class App extends React.Component {
         tool.addTool('飞', Tools.ODFly);
         tool.addTool('热', Tools.addHotLayer);
         tool.addTool("聚", Tools.addCluster);
+        tool.addTool("迹", Tools.addTripLayer);
+        tool.addTool("D", Tools.closeTripLayer);
+        
+
         tool.addTool("室", Tools.addIndoorLayer);
 
         // tool.addTool("trip", Tools.addTripLayer);
@@ -521,13 +514,48 @@ class App extends React.Component {
         tool.addTool("省", Tools.addProvince);
         tool.addTool("量", Tools.drawControl);
         tool.addTool('瞰', Tools.overView);
-        tool.addTool("始", () => map.setStyle(this.style.mymap))
+        tool.addTool("始", () => {
+          //map.setStyle(this.style.mymap);
+          map.remove();
+          app.start();
+        })
 
       },
       otherOprations: function () {
         let map = this.map;
+        map.on('click', (e) => {
+          e.preventDefault();
 
-        map.on('load', () => {
+          if (map.getLayer("selectedFeature")) {
+            let data = {
+              type: "FeatureCollection",
+              features: [
+
+              ]
+            };
+            map.getSource("selectedFeature").setData(data)
+          }
+          if (map.getLayer("higiLight")) {
+            let data = {
+              type: "FeatureCollection",
+              features: [
+
+              ]
+            };
+            map.getSource("higiLight").setData(data)
+          }
+
+          if (me.state.tableshow) {
+            me.setState({ tableshow: false })
+
+          }
+        })
+
+
+        map.on('styledata', () => {
+          
+          // me.setState({map:map});
+          if(map.getSource("selectedFeature"))return;
 
           map.addSource("selectedFeature", {
             type: 'geojson',
@@ -569,7 +597,7 @@ class App extends React.Component {
             'type': 'fill-extrusion',
             'paint': {
 
-              "fill-extrusion-color": 'yellow',
+              "fill-extrusion-color": 'rgb(0,102,255)',
 
               "fill-extrusion-height": ["get", "height"],
 
@@ -609,7 +637,7 @@ class App extends React.Component {
 
 
   componentDidUpdate() {
-    // console.log(this, 'Did update')
+    console.log(this, 'Did update')
     // this.setState({mapTitle:"map did update"}) //引发死循环
   }
 }

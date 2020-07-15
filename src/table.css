@@ -5,14 +5,21 @@
     /* max-height:70%; */
     /* min-height: 30%; */
     width: 10%;
-    background-color:darkkhaki;
-    border:  1px solid #F00;
-    border-radius: 1em;
+    background-color:royalblue;
+    border:  1px solid greenyellow;
+    border-radius: 0.1em;
     top:8em;
+    opacity: 0.7;
     /* left:0.5em; */
     padding-left: 0em;
     border-spacing: 1em;
+    
     /* z-index: -1; */
+}
+.table tr td{
+    /* background-color: seashell;
+     */
+     color: lightcyan;
 }
 .table tr td:last-child{
     text-align: left;

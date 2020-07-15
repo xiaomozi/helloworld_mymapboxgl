@@ -9,6 +9,7 @@
     "@deck.gl/layers": "^8.2.0",
     "@deck.gl/mapbox": "^8.2.0",
     "@deck.gl/mesh-layers": "^8.2.0",
+    "@deck.gl/react": "^8.2.0",
     "@mapbox/mapbox-gl-draw": "^1.1.2",
     "@mapbox/mapbox-gl-geocoder": "^4.5.1",
     "@testing-library/jest-dom": "^4.2.4",

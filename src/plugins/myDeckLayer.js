@@ -122,8 +122,24 @@ export default function myDeckLayer(){
     
     });
 }
+export const tripLayer = new TripsLayer({
+    id: 'trips-layer',
+    data:trips,
+    getPath: d => d.path,
+    // deduct start timestamp from each data point to avoid overflow
+    getTimestamps: d => d.timestamps,
+    getColor: d => (d.vendor === 0 ? [253, 250, 100] : [250, 184, 50]),
+    opacity: 1,
+    widthMinPixels: 5,
+    rounded: true,
+    trailLength:180,
+    // currentTime: 300,
+    currentTime:Date.now() / 1000 % 1800 -1000,
+    shadowEnabled: true
 
-export const tripLayer = new MapboxLayer({
+  });
+
+export const tripLayer1 = new MapboxLayer({
     type:TripsLayer,
     id: 'trips',
     data: trips,
