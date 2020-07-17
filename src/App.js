@@ -402,15 +402,14 @@ class App extends React.Component {
 
       initMap: function () {
         const INITIAL_VIEW_STATE = {
-          longitude: -74,
-          latitude: 40.72,
-          zoom: 13,
+          longitude: 106,
+          latitude: 36,
+          zoom: 4,
           bearing: 0,
           pitch: 45
         };
 
-        // me.setState({viewState:Object.assign({},INITIAL_VIEW_STATE)});
-
+       
         const style = {
           "streets": 'mapbox://styles/mapbox/streets-v11',
           "light": 'mapbox://styles/mapbox/light-v10',
@@ -429,7 +428,7 @@ class App extends React.Component {
         // const app = {};
         const map = new mapboxgl.Map({
           container: "map",
-          style: style.dark, // stylesheet location
+          style: style.mymap, // stylesheet location
           //center: [106, 30.0], // starting position [lng, lat]
           center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
           // zoom: 18,// starting zoom
@@ -514,11 +513,7 @@ class App extends React.Component {
 
         map.addControl(new StylesControl({
           styles: [
-            {
-              label: '街道',
-              styleName: 'Mapbox Streets',
-              styleUrl: 'mapbox://styles/mapbox/streets-v9',
-            }, {
+           {
               label: '卫星',
               styleName: 'Satellites',
               styleUrl: 'mapbox://styles/mapbox/satellite-v9',
@@ -532,10 +527,6 @@ class App extends React.Component {
               label: "夜间",
               styleName: "dark",
               styleUrl: style.dark
-            }, {
-              label: "渲染",
-              styleName: 'render',
-              styleUrl: style.hillshading
             }
           ],
           onChange: (style) => {
