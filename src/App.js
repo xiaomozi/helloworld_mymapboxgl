@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 // import logo from './logo.svg';
 
 import mapboxgl from 'mapbox-gl';
@@ -20,9 +20,11 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 import DeckGL from '@deck.gl/react';
 
+
+import { TripsLayer } from '@deck.gl/geo-layers';
+import trips from './data/trips.json';
 // import MsgBox from './MsgBox';
 import Toolbar from './ToolBar';
-
 
 
 //table react plugin
@@ -190,6 +192,15 @@ class ThemeData extends React.Component {
     // by default , show the first colume data
     let out = {};
     const row = newdata.toString();
+    // let dataF = row.match(/\d+\.?\d+[^\d+\.?\d+'年''月''日']+/g);
+    let dataF = row.match(/\d+\.?\d+/g);
+    if(!dataF)return
+    if(dataF.length<1)return
+    
+    const [max,min] = [Math.max(...dataF),Math.min(...dataF)];
+    const map = this.props.map;
+
+    map.legend.update(min,max);
 
     row.split("\n").map((item) => {
       if (item.trim().length > 0) {
@@ -202,14 +213,10 @@ class ThemeData extends React.Component {
         }
       }
     })
-    const map = this.props.map;
     Tools.updateProvinceLayer(map, out);
-
-
 
   }
   handleChangeChoose(e) {
-    debugger;
     // this.setState({index:e.target.value})
     let data = this.state.value;
     let out = {};
@@ -258,7 +265,64 @@ class ThemeData extends React.Component {
 
 }
 
+function MpTripsLayer(props) {
+  const [time, setTime] = useState(0);
+  const [animation] = useState({});
+  const animate = () => {
+    setTime(t => (t + 1) % 1000);
+    animation.id = window.requestAnimationFrame(animate);
+  };
 
+  useEffect(
+    () => {
+      animation.id = window.requestAnimationFrame(animate);
+      return () => window.cancelAnimationFrame(animation.id);
+    },
+    [animation]
+  );
+  const layers = [
+
+    new TripsLayer({
+      id: 'trips',
+      data: trips,
+      getPath: d => d.path,
+      getTimestamps: d => d.timestamps,
+      getColor: d => (d.vendor === 0 ? [253, 255, 53] : [23, 184, 190]),
+      opacity: 0.9,
+      widthMinPixels: 2,
+      rounded: true,
+      trailLength: 200,
+      currentTime: time,
+
+      shadowEnabled: false
+    })
+  ]
+
+  const INITIAL_VIEW_STATE = {
+    longitude: -74,
+    latitude: 40.72,
+    zoom: 13,
+    pitch: 45,
+    bearing: 0
+  };
+
+  const updateMapView = (stateView) => {
+      let map = props.map;
+    map.setViewState(stateView.viewState)
+  };
+
+  return (
+    <DeckGL
+      layers={layers}
+
+      initialViewState={props.vstate}
+      onViewStateChange = {(stateView)=>{updateMapView(stateView)}}
+      controller={true}
+    >
+
+    </DeckGL>
+  );
+}
 
 class App extends React.Component {
 
@@ -273,29 +337,38 @@ class App extends React.Component {
       tableshow: false,
       themeData: false,
       map: null,
-      showDeck:false,
-      tripLayer:{},
-      viewState:{ 
-        latitude: 40.80791,
-          longitude: -74.00807, 
-          zoom: 11,
-        bearing: 0,
-        pitch: 45},
+      showDeck: false,
+     
       mapTitle: "中国地图"
     }
+
+
+
     // this.hideDrawBox = this.hideDrawBox.bind(this);
     // this.showDrawBox = this.showDrawBox.bind(this);
+    // this.updateMapView = this.updateMapView.bind(this)
   }
 
+ 
   render() {
-    let deckLayer;
-    if(this.state.showDeck){
-      deckLayer = <DeckGL viewState={this.state.viewState} layers={Tools.showTripLayer(this.state.map)} />;
+    let myTripsLayer;
+    if (this.state.showDeck) {
 
+      myTripsLayer = <MpTripsLayer map={this.state.map} vstate = {{
+        longitude: -74,
+        latitude: 40.72,
+        zoom: 13,
+        bearing: 0,
+        pitch: 45
+      }}/>
     }
+
     return (
       <div>
+
         <div id="map"></div>
+        {myTripsLayer}
+
         <div id="calculation-box" className="calculation-box" style={{ visibility: "hidden" }}>
           <DrawCrtl />
 
@@ -305,8 +378,6 @@ class App extends React.Component {
         <MapTitle className='mapTitle' title={this.state.mapTitle} />
 
         <ThemeData className='themedata' themeData={this.state.themeData} map={this.state.map} />
-        {deckLayer}
-        
       </div>
 
     )
@@ -315,7 +386,7 @@ class App extends React.Component {
 
   componentDidMount() {
     // console.log(this, 'Did Mount')
-   
+    //  window.requestAnimationFrame(this.anim)
     if (!mapboxgl.supported()) {
       alert('Your browser does not support Mapbox GL');
       return;
@@ -331,9 +402,9 @@ class App extends React.Component {
 
       initMap: function () {
         const INITIAL_VIEW_STATE = {
-          latitude: 40.1637,
-          longitude: -74.061,
-          zoom: 15,
+          longitude: -74,
+          latitude: 40.72,
+          zoom: 13,
           bearing: 0,
           pitch: 45
         };
@@ -344,7 +415,7 @@ class App extends React.Component {
           "streets": 'mapbox://styles/mapbox/streets-v11',
           "light": 'mapbox://styles/mapbox/light-v10',
           // "dark": 'mapbox://styles/mapbox/dark-v10',
-          "dark":'mapbox://styles/xiaomozi/ckclpp2vb0voy1ho8txzxyob0',
+          "dark": 'mapbox://styles/xiaomozi/ckclpp2vb0voy1ho8txzxyob0',
           "satelite-streets": 'mapbox://styles/mapbox/satellite-streets-v11',
           "navi_day": 'mapbox://styles/mapbox/navigation-guidance-day-v4',
           'hillshading': 'mapbox://styles/mapbox/cjaudgl840gn32rnrepcb9b9g',
@@ -358,9 +429,9 @@ class App extends React.Component {
         // const app = {};
         const map = new mapboxgl.Map({
           container: "map",
-          style: style.mymap, // stylesheet location
+          style: style.dark, // stylesheet location
           //center: [106, 30.0], // starting position [lng, lat]
-          center:[INITIAL_VIEW_STATE.longitude,INITIAL_VIEW_STATE.latitude],
+          center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
           // zoom: 18,// starting zoom
           // interactive:false,
           zoom: INITIAL_VIEW_STATE.zoom,
@@ -372,7 +443,9 @@ class App extends React.Component {
         this.style = style;
         map.VRApp = me;
 
-       
+        map.setViewState = (vs)=>{
+          map.setBearing(vs.bearing).setCenter([vs.longitude,vs.latitude]).setPitch(vs.pitch).setZoom(vs.zoom);
+        }
         // map.on('load', (e) => {
 
         //   // map.addLayer({
@@ -495,7 +568,7 @@ class App extends React.Component {
         tool.addTool("聚", Tools.addCluster);
         tool.addTool("迹", Tools.addTripLayer);
         tool.addTool("D", Tools.closeTripLayer);
-        
+
 
         tool.addTool("室", Tools.addIndoorLayer);
 
@@ -553,9 +626,9 @@ class App extends React.Component {
 
 
         map.on('styledata', () => {
-          
+
           // me.setState({map:map});
-          if(map.getSource("selectedFeature"))return;
+          if (map.getSource("selectedFeature")) return;
 
           map.addSource("selectedFeature", {
             type: 'geojson',

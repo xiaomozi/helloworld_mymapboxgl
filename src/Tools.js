@@ -8,7 +8,7 @@ import "mapbox-gl-draw/dist/mapbox-gl-draw.css"
 import "./DrawControInfo.css";
 // import { map } from "d3";
 // import * as d3 from 'd3';
-import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer } from "./plugins/myDeckLayer";
+import myDeckLayer, { hexagonLayer, arcsLayer, tripLayer,tripsLayer} from "./plugins/myDeckLayer";
 import earthquakedata from "./data/earthquakes.json";
 import earthquakeslastyear from './data/earthquackslastyear.json';
 import Minimap from "./plugins/mapboxgl-minimapControl";
@@ -248,9 +248,9 @@ function addGeojsonLayer(map, json, level) {
       // "fill-opacity": 1,
       "fill-color": [
         "rgb",
-        255,
-        255,
-        255
+        200,
+        200,
+        200
       ],
       "fill-opacity": [
         "case",
@@ -404,15 +404,16 @@ function updateProvinceLayer(map, json) {
       }
     }
 
-    const maxValue = Math.max(...Object.values(themedata));
-    const minValue = Math.min(...Object.values(themedata));
-    map.legend.update(minValue,maxValue);
-
+    // const maxValue = Math.max(...Object.values(themedata));
+    // const minValue = Math.min(...Object.values(themedata));
+    // map.legend.update(minValue,maxValue);
+    
+    let {max,min}  = {...map.legend};
     function rescaledata(pre){
       
       const maxExtent = 255;
       const minExtent = 50;
-      return Math.ceil((pre-minValue + 1) * (maxExtent-minExtent) / (maxValue + 1 - minValue) + minExtent-1);
+      return Math.ceil((pre-min + 1) * (maxExtent-minExtent) / (max + 1 - min) + minExtent-1);
     }
     let data = JSON.parse(JSON.stringify(provincedata));
     data.features.map((feature) => {
@@ -1478,7 +1479,8 @@ function addTripLayer(map) {
   // if(map.VRApp.showDeck)
   // {
     map.VRApp.setState({showDeck:true})
-    // return tripLayer;
+    // map.VRApp.setState({tripLayer:tripLayer()})
+    // return tripLayer();
 
   // } 
 }
@@ -1490,21 +1492,10 @@ function closeTripLayer(map){
 
 function showTripLayer(map){
   if(map.VRApp.state.showDeck){
-    console.log(tripLayer)
-    function _animate() {
-      const loopLength = 1800, // unit corresponds to the timestamp in source data
-        animationSpeed = 30; // unit time per second
-      
-      const timestamp = Date.now() / 1000;
-      const loopTime = loopLength / animationSpeed;
-  
-     
-      tripLayer.time = ((timestamp % loopTime) / loopTime) * loopLength ;
-      
-        tripLayer._animationFrame = window.requestAnimationFrame(_animate);
-    }
-
-    return tripLayer;
+    // console.log(Object.keys(tripsLayer()))
+   
+    // tripLayer.props.currentTime
+    return tripsLayer();
 
   }else{
     return {}

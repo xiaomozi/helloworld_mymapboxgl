@@ -3,8 +3,8 @@ import * as d3 from 'd3';
 
 import { ScatterplotLayer, ArcLayer, LineLayer, PathLayer } from '@deck.gl/layers';
 import { HexagonLayer } from '@deck.gl/aggregation-layers';
-import {TripsLayer} from '@deck.gl/geo-layers';
 import { MapboxLayer } from '@deck.gl/mapbox';
+import { TripsLayer } from '@deck.gl/geo-layers';
 
 import trips from '../data/trips.json';
 import coutries from '../data/coutries.json';
@@ -109,7 +109,7 @@ function loadData(data) {
 }
 
 
-export default function myDeckLayer(){
+export default function myDeckLayer() {
     return new MapboxLayer({
         type: ScatterplotLayer,
         id: 'scatterplotLayer',
@@ -119,12 +119,12 @@ export default function myDeckLayer(){
         // onHover: this._onHover,
         getRadius: d => RADIUS_SCALE(d.total) * 3,
         getColor: d => (d.net > 0 ? TARGET_COLOR : SOURCE_COLOR)
-    
+
     });
 }
 export const tripLayer = new TripsLayer({
     id: 'trips-layer',
-    data:trips,
+    data: trips,
     getPath: d => d.path,
     // deduct start timestamp from each data point to avoid overflow
     getTimestamps: d => d.timestamps,
@@ -132,15 +132,15 @@ export const tripLayer = new TripsLayer({
     opacity: 1,
     widthMinPixels: 5,
     rounded: true,
-    trailLength:180,
+    trailLength: 180,
     // currentTime: 300,
-    currentTime:Date.now() / 1000 % 1800 -1000,
+    currentTime: 100,
     shadowEnabled: true
 
-  });
+});
 
 export const tripLayer1 = new MapboxLayer({
-    type:TripsLayer,
+    type: TripsLayer,
     id: 'trips',
     data: trips,
     getPath: d => d.path,
@@ -149,44 +149,54 @@ export const tripLayer1 = new MapboxLayer({
     opacity: 0.3,
     widthMinPixels: 2,
     rounded: true,
-    trailLength:180,
+    trailLength: 180,
     currentTime: (Date.now() / 1000 % 1800) * 30,
 
     shadowEnabled: false
 });
 
- const tripsLayer = function(){
-
-    function _animate() {
-        const loopLength = 1800, // unit corresponds to the timestamp in source data
-          animationSpeed = 30; // unit time per second
-        
-        const timestamp = Date.now() / 1000;
-        const loopTime = loopLength / animationSpeed;
-    
-       
-          this.time = ((timestamp % loopTime) / loopTime) * loopLength ;
-        
-        this._animationFrame = window.requestAnimationFrame(_animate);
-      }
-
-    const tripsLayer = new MapboxLayer({
-        id: 'trips',
+export const tripsLayer = function () {
+    let time = 0;
+    let opt = {
+        id: 'trips-layer',
         data: trips,
         getPath: d => d.path,
+        // deduct start timestamp from each data point to avoid overflow
         getTimestamps: d => d.timestamps,
-        getColor: d => (d.vendor === 0 ? [253, 128, 93] : [23, 184, 190]),
-        opacity: 0.3,
-        widthMinPixels: 2,
+        getColor: d => (d.vendor === 0 ? [253, 250, 100] : [250, 184, 50]),
+        opacity: 1,
+        widthMinPixels: 5,
         rounded: true,
-        trailLength:180,
-        currentTime: (Date.now() / 1000 % 1800) * 30,
+        trailLength: 180,
+        currentTime: (time / 1000 % 1800) * 30,
+        shadowEnabled: true
+    }
+    const tripsLayer = new TripsLayer(opt);
+    // tripsLayer.state.time = time;
+    function _animate() {
+        const loopLength = 1800, // unit corresponds to the timestamp in source data
+            animationSpeed = 30; // unit time per second
+
+        const timestamp = Date.now() / 1000;
+        const loopTime = loopLength / animationSpeed;
+        // console.log(time)
+        // console.log(tripsLayer.props.currentTime)
+
+        time = ((timestamp % loopTime) / loopTime) * loopLength;
+        // opt.currentTime = time;
+        // tripsLayer.setState({time:Object.assign({},time)})
+        window.requestAnimationFrame(_animate);
+        console.log(time)
+    debugger;
+
+        
+    }
+    _animate();
     
-        shadowEnabled: false
-    });
+    return tripsLayer;
 }
 
-export const arcsLayer = function(){
+export const arcsLayer = function () {
     return new MapboxLayer({
         type: ArcLayer,
         id: 'arcs',
@@ -196,9 +206,9 @@ export const arcsLayer = function(){
         opacity: 1,
         pickable: true,
         getWidth: 2,
-        getTilt:60,
-        autoHighlight:true,
-        greatCircle:false,
+        getTilt: 60,
+        autoHighlight: true,
+        greatCircle: false,
         getSourcePosition: d => d.source,
         getTargetPosition: d => d.target,
         getSourceColor: SOURCE_COLOR,
